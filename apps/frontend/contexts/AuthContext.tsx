@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import { api } from '@/lib/axio';
 
 type User = {
   id: string;
@@ -30,13 +30,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Check if user is logged in on initial load
     const checkAuth = async () => {
       try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-          {
-            withCredentials: true, // Important for sending cookies
-          }
-        );
-        setUser(response.data.user);
+        const { data:res } = await api.get('/auth/me');
+        setUser(res.data.user);
       } catch (error) {
         setUser(null);
       } finally {
@@ -49,12 +44,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`,
-        { email, password },
-        { withCredentials: true }
-      );
-      setUser(data.user);
+      const { data:res } = await api.post('/auth/signin', { email, password });
+      setUser(res.data.user);
       router.push('/dashboard');
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Login failed');
@@ -63,11 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/signout`,
-        {},
-        { withCredentials: true }
-      );
+      await api.post('/auth/signout', {});
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

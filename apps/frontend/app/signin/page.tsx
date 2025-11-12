@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import axios from 'axios';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import {
@@ -16,6 +15,8 @@ import {
   FormMessage,
 } from '@workspace/ui/components/form';
 import { PasswordInput } from '@workspace/ui/components/password-input';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 // ✅ Validation schema
 const formSchema = z.object({
@@ -27,6 +28,8 @@ type FormValues = z.infer<typeof formSchema>;
 
 const Signin = () => {
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -39,18 +42,12 @@ const Signin = () => {
   const onSubmit = async (values: FormValues) => {
     setLoading(true);
     try {
-      const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/signin`,
-        {
-          email: values.email.toLowerCase().trim(),
-          password: values.password,
-        }
-      );
+      const { email, password } = values;
+      await login(email, password);
 
-      console.log('✅ Signin successful', data);
+      console.log('✅ Signin successful');
 
-      // Redirect to dashboard or home page after successful login
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } catch (error: any) {
       console.error('Signin error:', error);
 

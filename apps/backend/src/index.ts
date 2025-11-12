@@ -27,7 +27,7 @@ app.use(morgan('dev'));
 app.use('/auth', authRoutes);
 
 // 🧍 Protected route example
-app.get('/api/me', protect, (req, res) => {
+app.get('/auth/me', protect, (req, res) => {
   res.status(200).json({
     success: true,
     data: { user: req.user },
