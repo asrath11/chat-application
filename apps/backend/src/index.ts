@@ -4,8 +4,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
 import authRoutes from './routes/auth.routes';
-import { protect } from './middleware/auth.middleware';
-import { prisma } from './lib/prisma';
+import { prisma } from '@workspace/database';
 
 dotenv.config();
 
@@ -25,14 +24,6 @@ app.use(morgan('dev'));
 
 // 🛣️ Routes
 app.use('/auth', authRoutes);
-
-// 🧍 Protected route example
-app.get('/auth/me', protect, (req, res) => {
-  res.status(200).json({
-    success: true,
-    data: { user: req.user },
-  });
-});
 
 // 🩺 Health check
 app.get('/health', (req, res) => {

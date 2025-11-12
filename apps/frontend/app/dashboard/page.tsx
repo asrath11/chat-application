@@ -1,15 +1,19 @@
-'use client';
-import { useAuth } from '@/contexts/AuthContext';
-export default function Dashboard() {
-  const { user, loading } = useAuth();
+// 'use client';
+// import { useAuth } from '@/contexts/AuthContext';
+import { prisma } from '@workspace/database';
+export default async function Dashboard() {
+  // const { user, loading } = useAuth();
+  const users = await prisma.user.findMany();
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  console.log(users);
 
-  if (!user) {
-    return <div>Unauthorized</div>;
-  }
+  // if (loading) {
+  //   return <div>Loading...</div>;
+  // }
+
+  // if (!user) {
+  //   return <div>Unauthorized</div>;
+  // }
   return (
     <div>
       <h1>Dashboard</h1>

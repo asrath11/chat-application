@@ -7,17 +7,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "dev": "ts-node src/index.ts",
-    "start": "nodemon dist/index.js",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "start": "nodemon dist/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
-    "@prisma/client": "^6.19.0",
+    "@workspace/database": "workspace:*",
     "@types/cookie-parser": "^1.4.10",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
+import { prisma } from '@workspace/database';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../lib/prisma'; // adjust import if needed
 
 declare global {
   namespace Express {
