@@ -1,14 +1,15 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import morgan from 'morgan';
 import authRoutes from './routes/auth.routes';
 import friendRequestRoutes from './routes/friend-request.route';
 import friendsRoutes from './routes/friends.route';
+import messageRoutes from './routes/message.route';
 import { prisma } from '@workspace/database';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,6 +31,7 @@ app.use(morgan('dev'));
 app.use('/auth', authRoutes);
 app.use('/friend-request', friendRequestRoutes);
 app.use('/friends', friendsRoutes);
+app.use('/messages', messageRoutes);
 
 // 🩺 Health check
 app.get('/health', (req, res) => {

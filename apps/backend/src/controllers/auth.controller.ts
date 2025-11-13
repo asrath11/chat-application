@@ -150,10 +150,9 @@ export const getMe = async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key'
-    ) as { userId: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      userId: string;
+    };
 
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
@@ -175,7 +174,7 @@ export const getMe = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      data: { user },
+      data: { user, token },
     });
   } catch (error) {
     console.error('GetMe error:', error);

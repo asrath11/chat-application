@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import {
@@ -10,8 +11,19 @@ import {
 import { ChatPanel } from '@/features/dashboard/components/ChatPanel';
 import { ChatSideBar } from '@/features/dashboard/components/ChatSideBar';
 
+interface Friend {
+  id: string;
+  name: string;
+  lastMessage?: string;
+  unread: number;
+  avatar?: string;
+  time: string;
+  username?: string;
+}
+
 export default function Dashboard() {
   const { isAuthenticated, loading } = useAuth();
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
   if (loading) {
     return (
@@ -38,7 +50,7 @@ export default function Dashboard() {
       >
         <ResizablePanel minSize={15} maxSize={25} defaultSize={20}>
           <div className='h-full p-4 border-r'>
-            <ChatSideBar />
+            <ChatSideBar onSelectChat={setSelectedFriend} />
           </div>
         </ResizablePanel>
 
@@ -46,7 +58,7 @@ export default function Dashboard() {
 
         <ResizablePanel>
           <div className='h-full p-4'>
-            <ChatPanel />
+            <ChatPanel selectedFriend={selectedFriend} />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

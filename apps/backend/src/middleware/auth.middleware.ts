@@ -38,10 +38,7 @@ export const protect = async (
     }
 
     // 🔹 3) Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'your-secret-key'
-    ) as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
       userId: string;
     };
 

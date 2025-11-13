@@ -21,6 +21,8 @@ model User {
   receivedRequests FriendRequest[] @relation("receivedRequests")
   friendshipsA     Friendship[]    @relation("friendA")
   friendshipsB     Friendship[]    @relation("friendB")
+  sentMessages     Message[]       @relation("sentMessages")
+  receivedMessages Message[]       @relation("receivedMessages")
 }
 
 enum FriendRequestStatus {
@@ -51,4 +53,20 @@ model Friendship {
   friendSince DateTime @default(now())
 
   @@unique([userAId, userBId])
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  sender     User     @relation("sentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId   String
+  recipient  User     @relation("receivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([senderId, recipientId])
+  @@index([recipientId])
+  @@index([createdAt])
 }
