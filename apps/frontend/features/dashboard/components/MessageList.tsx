@@ -17,12 +17,12 @@ interface Chat {
 }
 
 interface MessageListProps {
-  chats: Chat[];
+  friends: Chat[];
   onNewChat: () => void;
   onSelectChat: (id: string) => void;
 }
 
-export function MessageList({ chats, onSelectChat }: MessageListProps) {
+export function MessageList({ friends, onSelectChat }: MessageListProps) {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
 
   const handleStartChat = (userId: string) => {
@@ -48,14 +48,13 @@ export function MessageList({ chats, onSelectChat }: MessageListProps) {
 
       {/* Chat List */}
       <div className='flex-1 overflow-y-auto'>
-        {chats.length === 0 ? (
+        {friends.length === 0 ? (
           <div className='flex flex-col items-center justify-center h-full text-center p-8'>
             <p className='text-muted-foreground'>No messages yet</p>
             <NewChatDialog
               open={isNewChatOpen}
               onOpenChange={setIsNewChatOpen}
               onStartChat={handleStartChat}
-              asChild
             >
               <Button variant='ghost' className='mt-2'>
                 Start a new conversation
@@ -64,33 +63,33 @@ export function MessageList({ chats, onSelectChat }: MessageListProps) {
           </div>
         ) : (
           <div className='divide-y'>
-            {chats.map((chat) => (
+            {friends.map((friend) => (
               <button
-                key={chat.id}
+                key={friend.id}
                 className='w-full flex items-center p-3 hover:bg-accent transition-colors text-left'
-                onClick={() => onSelectChat(chat.id)}
+                onClick={() => onSelectChat(friend.id)}
               >
                 <div className='relative mr-3'>
                   <Avatar className='h-12 w-12'>
-                    <AvatarImage src={chat.avatar} alt={chat.name} />
-                    <AvatarFallback>{chat.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={friend.avatar} alt={friend.name} />
+                    <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  {chat.unread > 0 && (
+                  {friend.unread > 0 && (
                     <span className='absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center'>
-                      {chat.unread}
+                      {friend.unread}
                     </span>
                   )}
                 </div>
                 <div className='flex-1 min-w-0'>
                   <div className='flex justify-between items-center'>
-                    <p className='font-medium truncate'>{chat.name}</p>
+                    <p className='font-medium truncate'>{friend.name}</p>
                     <span className='text-xs text-muted-foreground'>
-                      {chat.time}
+                      {friend.time}
                     </span>
                   </div>
-                  {chat.lastMessage && (
+                  {friend.lastMessage && (
                     <p className='text-sm text-muted-foreground truncate text-left'>
-                      {chat.lastMessage}
+                      {friend.lastMessage}
                     </p>
                   )}
                 </div>

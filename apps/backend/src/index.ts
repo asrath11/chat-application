@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import morgan from 'morgan';
 import authRoutes from './routes/auth.routes';
+import friendRequestRoutes from './routes/friend-request.route';
 import friendsRoutes from './routes/friends.route';
 import { prisma } from '@workspace/database';
 
@@ -27,7 +28,8 @@ app.use(morgan('dev'));
 
 // 🛣️ Routes
 app.use('/auth', authRoutes);
-app.use('/friend-request', friendsRoutes);
+app.use('/friend-request', friendRequestRoutes);
+app.use('/friends', friendsRoutes);
 
 // 🩺 Health check
 app.get('/health', (req, res) => {

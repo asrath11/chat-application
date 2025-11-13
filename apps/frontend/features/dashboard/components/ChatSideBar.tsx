@@ -14,8 +14,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@workspace/ui/components/avatar';
-import { Button } from '@workspace/ui/components/button';
-import { Check, X } from 'lucide-react';
 import { MessageList } from './MessageList';
 import { api } from '@/lib/axio';
 
@@ -43,7 +41,7 @@ function ChatSideBar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
   const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([]);
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [friends, setFriends] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,30 +71,24 @@ function ChatSideBar() {
     fetchData();
   }, [activeTab]);
 
-  // const chats: Chat[] = [
-  //   {
-  //     id: '1',
-  //     name: 'Tech Group',
-  //     lastMessage: 'Check out this new framework!',
-  //     unread: 3,
-  //     time: '2h',
-  //   },
-  //   {
-  //     id: '2',
-  //     name: 'Sarah Miller',
-  //     lastMessage: 'Meeting at 3pm',
-  //     unread: 0,
-  //     time: '1d',
-  //     avatar: '/avatars/03.png',
-  //   },
-  //   {
-  //     id: '3',
-  //     name: 'Design Team',
-  //     lastMessage: 'Here are the new mockups',
-  //     unread: 5,
-  //     time: '3d',
-  //   },
-  // ];
+  useEffect(() => {
+    const fetchFriends = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const { data } = await api.get('/friends');
+        setFriends(data.data);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load chats');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFriends();
+  }, []);
 
   const handleAcceptRequest = async (requestId: string) => {
     try {
@@ -129,19 +121,15 @@ function ChatSideBar() {
           ...prev,
           {
             id: data.data.id,
-            name: data.data.to?.name || data.data.to?.username || username,
-            username: data.data.to?.username || username,
+            name: data.data.name,
+            username: data.data.username,
           },
         ]);
       }
-    } catch (error) {
-      console.error('Error sending request:', error);
-      // Remove the optimistic update on error
-      setSentRequests((prev) =>
-        prev.filter((req) => !req.id.startsWith('temp-'))
-      );
-      // Optionally show an error message to the user
-      setError('Failed to send friend request');
+    } catch (error: any) {
+      const data = error.response.data.message;
+      console.error('Error sending request:', data);
+      setError(data);
     } finally {
       setIsLoading(false);
     }
@@ -216,11 +204,19 @@ function ChatSideBar() {
 
         <div className='flex-1 overflow-hidden'>
           <TabsContent value='messages' className='m-0 h-full'>
-            <MessageList
-              chats={chats}
-              onNewChat={handleNewChat}
-              onSelectChat={handleSelectChat}
-            />
+            {isLoading ? (
+              <div className='flex justify-center py-8'>
+                <div className='h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent' />
+              </div>
+            ) : error ? (
+              <div className='text-center py-8 text-destructive'>{error}</div>
+            ) : (
+              <MessageList
+                friends={friends}
+                onNewChat={handleNewChat}
+                onSelectChat={handleSelectChat}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value='received-requests' className='m-0 h-full'>
@@ -289,7 +285,6 @@ function ChatSideBar() {
                       </div>
                       <div className='text-sm text-muted-foreground flex items-center'>
                         <Clock className='h-4 w-4 mr-1' />
-                        {request.status == 'rejected'}
                         {request.status}
                       </div>
                     </div>
