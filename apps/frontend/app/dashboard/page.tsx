@@ -1,22 +1,55 @@
-// 'use client';
-// import { useAuth } from '@/contexts/AuthContext';
-import { prisma } from '@workspace/database';
-export default async function Dashboard() {
-  // const { user, loading } = useAuth();
-  const users = await prisma.user.findMany();
+'use client';
 
-  console.log(users);
+import { useAuth } from '@/contexts/AuthContext';
+import { Loader2 } from 'lucide-react';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@workspace/ui/components/resizable';
+import { ChatPanel } from '@/features/dashboard/components/ChatPanel';
+import { ChatSideBar } from '@/features/dashboard/components/ChatSideBar';
 
-  // if (loading) {
-  //   return <div>Loading...</div>;
-  // }
+export default function Dashboard() {
+  const { isAuthenticated, loading } = useAuth();
 
-  // if (!user) {
-  //   return <div>Unauthorized</div>;
-  // }
+  if (loading) {
+    return (
+      <div className='flex h-screen items-center justify-center'>
+        <Loader2 className='animate-spin size-6' />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className='flex h-screen items-center justify-center text-xl'>
+        Unauthorized
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <div className='h-screen'>
+      {/* ⭐ KEY FIX */}
+      <ResizablePanelGroup
+        direction='horizontal'
+        className='h-full w-full border rounded-lg'
+      >
+        <ResizablePanel minSize={15} maxSize={25} defaultSize={20}>
+          <div className='h-full p-4 border-r'>
+            <ChatSideBar />
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle />
+
+        <ResizablePanel>
+          <div className='h-full p-4'>
+            <ChatPanel />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }
