@@ -16,10 +16,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@workspace/ui/components/form';
+import { useRouter } from 'next/navigation';
 
 // ✅ Validation schema
 const formSchema = z
   .object({
+    name: z.string().min(3, { message: 'Name must be at least 3 characters' }),
     username: z
       .string()
       .min(3, { message: 'Username must be at least 3 characters' })
@@ -47,10 +49,12 @@ type FormValues = z.infer<typeof formSchema>;
 const Signup = () => {
   const [loading, setLoading] = useState(false);
 
-  // ✅ Correct way to initialize useForm
+  const router = useRouter();
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       username: '',
       email: '',
       password: '',
@@ -67,11 +71,12 @@ const Signup = () => {
     setLoading(true);
     try {
       const { confirmPassword, ...userData } = values;
-      console.log(process.env.NEXT_PUBLIC_API_URL);
+      console.log(userData);
 
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
         {
+          name: userData.name.trim(),
           username: userData.username.trim(),
           email: userData.email.toLowerCase().trim(),
           password: userData.password,
@@ -79,15 +84,12 @@ const Signup = () => {
         }
       );
 
-      // On successful signup
       console.log('✅ Signup successful:', data);
 
-      // Redirect to signin page with success state
-      window.location.href = '/signin?signup=success';
+      router.push('/signin');
     } catch (error: any) {
       console.error('Signup error:', error);
 
-      // Handle specific error cases
       let errorMessage = 'An unexpected error occurred. Please try again.';
       const errorResponse = error.response?.data;
 
@@ -130,6 +132,25 @@ const Signup = () => {
                   {errors.root.message}
                 </div>
               )}
+
+              {/* ✅ Full Name (NEW FIELD) */}
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem className='w-full'>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder='John Doe'
+                        {...field}
+                        className='text-sm'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Username */}
               <FormField
@@ -208,14 +229,12 @@ const Signup = () => {
                 )}
               />
 
-              {/* Submit Button */}
               <Button type='submit' className='w-full mt-2' disabled={loading}>
                 {loading ? 'Creating...' : 'Create Account'}
               </Button>
             </form>
           </Form>
 
-          {/* Footer */}
           <div className='text-muted-foreground flex justify-center gap-1 text-sm'>
             <p>Already have an account?</p>
             <a

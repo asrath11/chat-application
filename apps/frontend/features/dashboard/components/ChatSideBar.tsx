@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import {
   Tabs,
@@ -17,6 +17,7 @@ import {
 import { Button } from '@workspace/ui/components/button';
 import { Check, X } from 'lucide-react';
 import { MessageList } from './MessageList';
+import { api } from '@/lib/axio';
 
 type TabValue = 'messages' | 'received-requests' | 'sent-requests';
 
@@ -25,6 +26,7 @@ interface FriendRequest {
   name: string;
   avatar?: string;
   username: string;
+  status?: 'pending' | 'accepted' | 'declined';
 }
 
 interface Chat {
@@ -39,89 +41,110 @@ interface Chat {
 function ChatSideBar() {
   const [activeTab, setActiveTab] = useState<TabValue>('messages');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
+  const [receivedRequests, setReceivedRequests] = useState<FriendRequest[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - replace with actual data from your API
-  const receivedRequests: FriendRequest[] = [
-    {
-      id: '1',
-      name: 'Alex Johnson',
-      username: 'alexj',
-      avatar: '/avatars/01.png',
-    },
-    {
-      id: '2',
-      name: 'Sam Wilson',
-      username: 'samwilson',
-      avatar: '/avatars/02.png',
-    },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setError(null);
 
-  const sentRequests: FriendRequest[] = [
-    {
-      id: '3',
-      name: 'Jordan Smith',
-      username: 'jordans',
-      avatar: '/avatars/03.png',
-    },
-    {
-      id: '4',
-      name: 'Taylor Swift',
-      username: 'taylors',
-      avatar: '/avatars/04.png',
-    },
-  ];
+      try {
+        if (activeTab === 'sent-requests') {
+          const { data } = await api.get('/friend-request/sent');
+          setSentRequests(data.data);
+        }
 
-  const chats: Chat[] = [
-    {
-      id: '1',
-      name: 'Tech Group',
-      lastMessage: 'Check out this new framework!',
-      unread: 3,
-      time: '2h',
-    },
-    {
-      id: '2',
-      name: 'Sarah Miller',
-      lastMessage: 'Meeting at 3pm',
-      unread: 0,
-      time: '1d',
-      avatar: '/avatars/03.png',
-    },
-    {
-      id: '3',
-      name: 'Design Team',
-      lastMessage: 'Here are the new mockups',
-      unread: 5,
-      time: '3d',
-    },
-  ];
-
-  const handleAcceptRequest = (requestId: string) => {
-    console.log('Accept request:', requestId);
-    // Implement accept friend request logic
-  };
-
-  const handleDeclineRequest = (requestId: string) => {
-    console.log('Decline request:', requestId);
-    // Implement decline friend request logic
-  };
-
-  const handleSendRequest = (username: string) => {
-    console.log('Sending friend request to:', username);
-    // Here you would typically:
-    // 1. Call your API to send a friend request
-    // 2. Update the sentRequests state with the new request
-    // 3. Show a success/error message
-
-    // For now, we'll just log it
-    const newRequest = {
-      id: `temp-${Date.now()}`,
-      name: username, // In a real app, you'd fetch the user's name from the API
-      username,
+        if (activeTab === 'received-requests') {
+          const { data } = await api.get('/friend-request/incoming');
+          setReceivedRequests(data.data);
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load requests');
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    // In a real app, you'd update the state with the response from the API
-    // setSentRequests(prev => [...prev, newRequest]);
+    fetchData();
+  }, [activeTab]);
+
+  // const chats: Chat[] = [
+  //   {
+  //     id: '1',
+  //     name: 'Tech Group',
+  //     lastMessage: 'Check out this new framework!',
+  //     unread: 3,
+  //     time: '2h',
+  //   },
+  //   {
+  //     id: '2',
+  //     name: 'Sarah Miller',
+  //     lastMessage: 'Meeting at 3pm',
+  //     unread: 0,
+  //     time: '1d',
+  //     avatar: '/avatars/03.png',
+  //   },
+  //   {
+  //     id: '3',
+  //     name: 'Design Team',
+  //     lastMessage: 'Here are the new mockups',
+  //     unread: 5,
+  //     time: '3d',
+  //   },
+  // ];
+
+  const handleAcceptRequest = async (requestId: string) => {
+    try {
+      await api.post('/friend-request/respond', { requestId, action: 'accept' });
+      setReceivedRequests((prev) => prev.filter((req) => req.id !== requestId));
+    } catch (error) {
+      console.error('Error accepting request:', error);
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: string) => {
+    try {
+      await api.post('/friend-request/respond', { requestId, action: 'reject' });
+      setReceivedRequests((prev) => prev.filter((req) => req.id !== requestId));
+    } catch (error) {
+      console.error('Error declining request:', error);
+    }
+  };
+
+  const handleSendRequest = async (username: string) => {
+    console.log('Sending friend request to:', username);
+    try {
+      // Make the API call
+      setIsLoading(true);
+      const { data } = await api.post('/friend-request', { username });
+
+      // Replace the optimistic update with the actual server response
+      if (data.success && data.data) {
+        setSentRequests((prev) => [
+          ...prev,
+          {
+            id: data.data.id,
+            name: data.data.to?.name || data.data.to?.username || username,
+            username: data.data.to?.username || username,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error sending request:', error);
+      // Remove the optimistic update on error
+      setSentRequests((prev) =>
+        prev.filter((req) => !req.id.startsWith('temp-'))
+      );
+      // Optionally show an error message to the user
+      setError('Failed to send friend request');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNewChat = () => {
@@ -202,10 +225,12 @@ function ChatSideBar() {
 
           <TabsContent value='received-requests' className='m-0 h-full'>
             <>
-              {receivedRequests.length === 0 ? (
-                <div className='text-center py-8 text-muted-foreground'>
-                  No friend requests
+              {isLoading ? (
+                <div className='flex justify-center py-8'>
+                  <div className='h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent' />
                 </div>
+              ) : error ? (
+                <div className='text-center py-8 text-destructive'>{error}</div>
               ) : (
                 <div className='space-y-4'>
                   <FriendRequests
@@ -222,22 +247,31 @@ function ChatSideBar() {
               <div className='flex items-center justify-between mb-4'>
                 <h2 className='text-lg font-semibold'>Sent Requests</h2>
                 <div className='flex items-center space-x-2'>
-                  <span className='text-sm text-muted-foreground'>
-                    {sentRequests.length} sent
-                  </span>
+                  {!isLoading && (
+                    <span className='text-sm text-muted-foreground'>
+                      {sentRequests.length}{' '}
+                      {sentRequests.length === 1 ? 'request' : 'requests'} sent
+                    </span>
+                  )}
                   <SendRequestDialog onSendRequest={handleSendRequest} />
                 </div>
               </div>
               <div className='space-y-4'>
-                {sentRequests.length === 0 ? (
+                {isLoading ? (
+                  <div className='flex justify-center py-8'>
+                    <div className='h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent' />
+                  </div>
+                ) : error ? (
+                  <div className='text-center py-8 text-destructive'>{error}</div>
+                ) : sentRequests.length === 0 ? (
                   <div className='text-center py-8 text-muted-foreground'>
-                    No sent requests
+                    You haven't sent any friend requests yet.
                   </div>
                 ) : (
                   sentRequests.map((request) => (
                     <div
                       key={request.id}
-                      className='flex items-center justify-between p-3 rounded-lg border'
+                      className='flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors'
                     >
                       <div className='flex items-center space-x-3'>
                         <Avatar className='h-10 w-10'>
@@ -255,7 +289,8 @@ function ChatSideBar() {
                       </div>
                       <div className='text-sm text-muted-foreground flex items-center'>
                         <Clock className='h-4 w-4 mr-1' />
-                        Pending
+                        {request.status == 'rejected'}
+                        {request.status}
                       </div>
                     </div>
                   ))

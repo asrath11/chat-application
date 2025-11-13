@@ -9,6 +9,7 @@ datasource db {
 
 model User {
   id              String   @id @default(cuid())
+  name            String
   username        String   @unique
   email           String   @unique
   password        String
@@ -22,15 +23,21 @@ model User {
   friendshipsB     Friendship[]    @relation("friendB")
 }
 
+enum FriendRequestStatus {
+  pending
+  accepted
+  declined
+}
+
 model FriendRequest {
-  id        String   @id @default(uuid())
-  from      User     @relation("sentRequests", fields: [fromId], references: [id])
+  id        String              @id @default(uuid())
+  from      User                @relation("sentRequests", fields: [fromId], references: [id])
   fromId    String
-  to        User     @relation("receivedRequests", fields: [toId], references: [id])
+  to        User                @relation("receivedRequests", fields: [toId], references: [id])
   toId      String
-  status    String   @default("pending") // pending | accepted | rejected
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    FriendRequestStatus @default(pending)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
 
   @@unique([fromId, toId])
 }

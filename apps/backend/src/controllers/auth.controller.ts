@@ -12,7 +12,8 @@ export const signup = async (
   res: Response
 ) => {
   try {
-    const { email, username, password } = req.body;
+    const { name, email, username, password } = req.body;
+    console.log(name);
 
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
@@ -32,6 +33,7 @@ export const signup = async (
     // Create new user
     const user = await prisma.user.create({
       data: {
+        name,
         email,
         username,
         password: hashedPassword,
