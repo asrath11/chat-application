@@ -3,6 +3,7 @@ import { MessageSquare, User, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { useWebSocket } from '@/contexts/WebSocketContext';
+import { useChat } from '@/contexts/ChatContext';
 import {
   SendRequestDialog,
   FriendRequests,
@@ -14,9 +15,10 @@ import { ChatSideBarHeader, ChatSideBarSearch } from './';
 import { useChatData } from '@/hooks/useChatData';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { chatService } from '@/services/chat.service';
-import { ChatSideBarProps, TabValue, Friend } from '@/types/chat.types';
+import { TabValue, Friend } from '@/types/chat.types';
 
-function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
+function ChatSideBar() {
+  const { selectedFriend, selectFriendById } = useChat();
   const [activeTab, setActiveTab] = useState<TabValue>('messages');
   const [searchQuery, setSearchQuery] = useState('');
   const [loadingRequestId, setLoadingRequestId] = useState<string | null>(null);
@@ -44,7 +46,7 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
   // WebSocket integration
   useChatWebSocket({
     socket,
-    activeChatId,
+    activeChatId: selectedFriend?.id,
     onReceivedRequest: addOrUpdateReceivedRequest,
     onFriendAccepted: (data) => {
       // When someone accepts your friend request, add them to your friends list
@@ -69,7 +71,7 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
         )
       );
     },
-    onMessage: (msg) => updateFriendMessage(msg, activeChatId),
+    onMessage: (msg) => updateFriendMessage(msg, selectedFriend?.id),
     onMessagesRead: markMessagesAsRead,
   });
 
@@ -212,15 +214,12 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
 
   const handleSelectChat = useCallback(
     (chatId: string) => {
-      const selectedFriend = friends.find((f) => f.id === chatId);
-      if (selectedFriend) {
-        setFriends((prev) =>
-          prev.map((f) => (f.id === chatId ? { ...f, unread: 0 } : f))
-        );
-        onSelectChat(selectedFriend);
-      }
+      setFriends((prev) =>
+        prev.map((f) => (f.id === chatId ? { ...f, unread: 0 } : f))
+      );
+      selectFriendById(chatId, friends);
     },
-    [friends, onSelectChat, setFriends]
+    [friends, selectFriendById, setFriends]
   );
 
   const handleSignOut = useCallback(async () => {
@@ -276,7 +275,7 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
                   friends={filteredFriends}
                   onNewChat={handleNewChat}
                   onSelectChat={handleSelectChat}
-                  activeChatId={activeChatId}
+                  activeChatId={selectedFriend?.id}
                 />
               )}
             </div>

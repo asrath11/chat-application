@@ -1,18 +1,9 @@
 import React from 'react';
+import { useChat } from '@/contexts/ChatContext';
 import { ChatWindow } from '../chat-window/ChatWindow';
 
-interface Friend {
-  id: string;
-  name: string;
-  avatar?: string;
-  username?: string;
-}
-
-interface ChatPanelProps {
-  selectedFriend: Friend | null;
-}
-
-function ChatPanel({ selectedFriend }: ChatPanelProps) {
+function ChatPanel() {
+  const { selectedFriend } = useChat();
   if (!selectedFriend) {
     return (
       <div className='flex items-center justify-center h-full'>

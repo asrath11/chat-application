@@ -31,8 +31,3 @@ export interface SearchedUser {
   name: string;
   status: 'none' | 'pending' | 'received' | 'friends';
 }
-
-export interface ChatSideBarProps {
-  onSelectChat: React.Dispatch<React.SetStateAction<Friend | null>>;
-  activeChatId?: string;
-}
