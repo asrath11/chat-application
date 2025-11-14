@@ -57,6 +57,13 @@ export const sendFriendRequest = async (
       select: {
         id: true,
         status: true,
+        from: {
+          select: {
+            id: true,
+            username: true,
+            name: true,
+          },
+        },
         to: {
           select: {
             id: true,
@@ -71,6 +78,10 @@ export const sendFriendRequest = async (
       id: friendRequest.id,
       name: friendRequest.to.name,
       username: friendRequest.to.username,
+      recipientId: friendRequest.to.id,
+      fromName: friendRequest.from.name,
+      fromUsername: friendRequest.from.username,
+      fromAvatar: '',
     };
     return res.status(201).json({
       success: true,
@@ -216,17 +227,31 @@ export const respondToFriendRequest = async (
     }
 
     // Accept request → Create friendship
-    await prisma.$transaction([
+    const [updatedRequest, friendship] = await prisma.$transaction([
       prisma.friendRequest.update({
         where: { id: requestId },
         data: { status: 'accepted' },
+        include: {
+          from: { select: { id: true, name: true, username: true } },
+          to: { select: { id: true, name: true, username: true } },
+        },
       }),
       prisma.friendship.create({
         data: { userAId: request.fromId, userBId: request.toId },
       }),
     ]);
 
-    return res.json({ success: true, message: 'Friend request accepted' });
+    return res.json({
+      success: true,
+      message: 'Friend request accepted',
+      data: {
+        friendId: updatedRequest.from.id,
+        friendName: updatedRequest.from.name,
+        myId: updatedRequest.to.id,
+        myName: updatedRequest.to.name,
+        myAvatar: '',
+      },
+    });
   } catch (error) {
     console.error(error);
     return res

@@ -20,15 +20,22 @@ export const getFriends = async (req: Request, res: Response) => {
       },
     });
 
-    const formatted = friends.map((f) =>
-      f.userA.id === user.id ? f.userB : f.userA
-    );
+    // Get unread message counts and last message for each friend
+    const formatted = await Promise.all(
+      friends.map(async (f) => {
+        const friend = f.userA.id === user.id ? f.userB : f.userA;
 
-    return res.status(200).json({ success: true, data: formatted });
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ success: false, message: 'Internal server error' });
-  }
-};
+        // Count unread messages from this friend
+        const unreadCount = await prisma.message.count({
+          where: {
+            senderId: friend.id,
+            recipientId: user.id,
+            isRead: false,
+          },
+        });
+
+        // Get last message between users
+        const lastMessage = await prisma.message.findFirst({
+          where: {
+            OR: [
+             

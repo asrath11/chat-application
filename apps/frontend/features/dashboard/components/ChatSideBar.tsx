@@ -7,6 +7,7 @@ import {
   TabsTrigger,
 } from '@workspace/ui/components/tabs';
 import { Search, User, MessageSquare, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import { SendRequestDialog } from './SendRequestDialog';
 import { FriendRequests } from './FriendRequests';
 import {
@@ -129,6 +130,11 @@ function ChatSideBar({ onSelectChat }: ChatSideBarProps) {
         avatar: data.fromAvatar || '',
         status: 'pending',
       });
+
+      // Show toast notification
+      toast.info('New Friend Request', {
+        description: `${data.fromName} (@${data.fromUsername}) sent you a friend request`,
+      });
     };
 
     // 🤝 Friend Request Accepted
@@ -147,6 +153,11 @@ function ChatSideBar({ onSelectChat }: ChatSideBarProps) {
       // Remove from pending lists
       setReceivedRequests((prev) => prev.filter((r) => r.id !== data.requestId));
       setSentRequests((prev) => prev.filter((r) => r.id !== data.requestId));
+
+      // Show toast notification
+      toast.success('Friend Request Accepted', {
+        description: `You are now friends with ${data.friendName}`,
+      });
     };
 
     // 💬 New Message
@@ -197,10 +208,24 @@ function ChatSideBar({ onSelectChat }: ChatSideBarProps) {
   // -------- Handlers --------
   const handleAcceptRequest = async (requestId: string) => {
     try {
-      await api.post('/friend-request/respond', { requestId, action: 'accept' });
+      const { data } = await api.post('/friend-request/respond', { requestId, action: 'accept' });
       setReceivedRequests((prev) => prev.filter((req) => req.id !== requestId));
+
+      // Emit WebSocket event to notify the sender
+      if (socket && data.data) {
+        socket.emit('friend_request_accepted', {
+          requestId: requestId,
+          userId: data.data.friendId,
+          friendId: data.data.myId,
+          friendName: data.data.myName,
+          friendAvatar: data.data.myAvatar,
+        });
+      }
+
+      toast.success('Friend request accepted');
     } catch (error) {
       console.error('Error accepting request:', error);
+      toast.error('Failed to accept request');
     }
   };
 
@@ -228,9 +253,26 @@ function ChatSideBar({ onSelectChat }: ChatSideBarProps) {
             status: 'pending',
           },
         ]);
+
+        // Emit WebSocket event to notify recipient
+        if (socket && data.data.recipientId) {
+          socket.emit('friend_request_sent', {
+            requestId: data.data.id,
+            toUserId: data.data.recipientId,
+            fromName: data.data.fromName,
+            fromUsername: data.data.fromUsername,
+            fromAvatar: data.data.fromAvatar,
+          });
+        }
+
+        toast.success('Friend request sent', {
+          description: `Request sent to ${data.data.name}`,
+        });
       }
     } catch (error: any) {
-      setError(error.response.data.message);
+      const errorMsg = error.response?.data?.message || 'Failed to send request';
+      setError(errorMsg);
+      toast.error('Error', { description: errorMsg });
     } finally {
       setIsLoading(false);
     }
