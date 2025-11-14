@@ -58,6 +58,14 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
       });
       removeFriendRequest(data.requestId);
     },
+    onFriendDeclined: (data) => {
+      // Update the sent request status to 'declined'
+      setSentRequests((prev) =>
+        prev.map((req) =>
+          req.id === data.requestId ? { ...req, status: 'declined' } : req
+        )
+      );
+    },
     onMessage: (msg) => updateFriendMessage(msg, activeChatId),
     onMessagesRead: markMessagesAsRead,
   });
@@ -136,8 +144,18 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
     async (requestId: string) => {
       try {
         setLoadingRequestId(requestId);
-        await chatService.respondToRequest(requestId, 'reject');
+        const data = await chatService.respondToRequest(requestId, 'reject');
         removeFriendRequest(requestId);
+
+        // Emit WebSocket event to notify the sender
+        if (socket && data.data) {
+          socket.emit('friend_request_declined', {
+            requestId: requestId,
+            userId: data.data.senderId,
+            recipientName: data.data.recipientName,
+          });
+        }
+
         toast.success('Friend request declined');
       } catch (error) {
         console.error('Error declining request:', error);
@@ -146,14 +164,14 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
         setLoadingRequestId(null);
       }
     },
-    [removeFriendRequest]
+    [removeFriendRequest, socket]
   );
 
   const handleSendRequest = useCallback(
     async (username: string) => {
       try {
         const data = await chatService.sendFriendRequest(username);
-
+        // console.log(username)
         if (data.success && data.data) {
           setSentRequests((prev) => [
             ...prev,
@@ -205,7 +223,6 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
   const handleSignOut = useCallback(async () => {
     try {
       await chatService.logout();
-      localStorage.removeItem('token');
       toast.success('Signed out successfully');
       router.push('/login');
     } catch (error) {

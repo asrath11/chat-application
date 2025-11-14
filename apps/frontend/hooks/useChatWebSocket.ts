@@ -14,6 +14,7 @@ interface UseChatWebSocketProps {
     friendUsername: string;
     friendAvatar?: string;
   }) => void;
+  onFriendDeclined: (data: { requestId: string; recipientName: string }) => void;
   onMessage: (msg: any) => void;
   onMessagesRead: (friendId: string) => void;
 }
@@ -23,6 +24,7 @@ export const useChatWebSocket = ({
   activeChatId,
   onReceivedRequest,
   onFriendAccepted,
+  onFriendDeclined,
   onMessage,
   onMessagesRead,
 }: UseChatWebSocketProps) => {
@@ -62,6 +64,21 @@ export const useChatWebSocket = ({
     [onFriendAccepted]
   );
 
+  const handleFriendDeclined = useCallback(
+    (data: any) => {
+      console.log('❌ friend_request_declined:', data);
+      onFriendDeclined({
+        requestId: data.requestId,
+        recipientName: data.recipientName,
+      });
+
+      toast.info('Friend Request Declined', {
+        description: `${data.recipientName} declined your friend request`,
+      });
+    },
+    [onFriendDeclined]
+  );
+
   const handleMessage = useCallback(
     (msg: any) => {
       console.log('💬 receive_message:', msg);
@@ -93,6 +110,7 @@ export const useChatWebSocket = ({
 
     socket.on('friend_request_received', handleFriendRequest);
     socket.on('friend_request_accepted', handleFriendAccepted);
+    socket.on('friend_request_declined', handleFriendDeclined);
     socket.on('receive_message', handleMessage);
     socket.on('typing', handleTyping);
     socket.on('stop_typing', handleStopTyping);
@@ -101,6 +119,7 @@ export const useChatWebSocket = ({
     return () => {
       socket.off('friend_request_received', handleFriendRequest);
       socket.off('friend_request_accepted', handleFriendAccepted);
+      socket.off('friend_request_declined', handleFriendDeclined);
       socket.off('receive_message', handleMessage);
       socket.off('typing', handleTyping);
       socket.off('stop_typing', handleStopTyping);
@@ -110,6 +129,7 @@ export const useChatWebSocket = ({
     socket,
     handleFriendRequest,
     handleFriendAccepted,
+    handleFriendDeclined,
     handleMessage,
     handleTyping,
     handleStopTyping,

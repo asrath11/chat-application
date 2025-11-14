@@ -5,6 +5,7 @@ import {
   getAllSentFriendRequests,
   respondToFriendRequest,
   getIncomingFriendRequests,
+  searchUsers,
 } from '../controllers/friend-request.contoller';
 
 const router = express.Router();
@@ -20,5 +21,8 @@ router.get('/sent', protect, getAllSentFriendRequests);
 
 // GET /friend-request/incoming -> requests this user received
 router.get('/incoming', protect, getIncomingFriendRequests);
+
+// GET /friend-request/search   -> search users by username
+router.get('/search', protect, searchUsers);
 
 export default router;

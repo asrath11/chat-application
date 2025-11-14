@@ -25,6 +25,13 @@ export interface CurrentUser {
   avatar?: string;
 }
 
+export interface SearchedUser {
+  id: string;
+  username: string;
+  name: string;
+  status: 'none' | 'pending' | 'received' | 'friends';
+}
+
 export interface ChatSideBarProps {
   onSelectChat: React.Dispatch<React.SetStateAction<Friend | null>>;
   activeChatId?: string;

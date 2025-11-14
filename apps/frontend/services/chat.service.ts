@@ -22,6 +22,11 @@ export const chatService = {
     return data.data || [];
   },
 
+  async searchUsers(query: string) {
+    const { data } = await api.get(`/friend-request/search?query=${encodeURIComponent(query)}`);
+    return data.data || [];
+  },
+
   async sendFriendRequest(username: string) {
     const { data } = await api.post('/friend-request', { username });
     return data;

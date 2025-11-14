@@ -226,12 +226,26 @@ export const respondToFriendRequest = async (
     }
 
     if (action === 'reject') {
-      await prisma.friendRequest.update({
+      const updatedRequest = await prisma.friendRequest.update({
         where: { id: requestId },
         data: { status: 'declined' },
+        include: {
+          from: { select: { id: true, name: true, username: true } },
+          to: { select: { id: true, name: true, username: true } },
+        },
       });
 
-      return res.json({ success: true, message: 'Request rejected' });
+      return res.json({
+        success: true,
+        message: 'Request rejected',
+        data: {
+          requestId: updatedRequest.id,
+          senderId: updatedRequest.from.id,
+          senderName: updatedRequest.from.name,
+          recipientId: updatedRequest.to.id,
+          recipientName: updatedRequest.to.name,
+        },
+      });
     }
 
     // Check if friendship already exists
@@ -294,6 +308,98 @@ export const respondToFriendRequest = async (
       });
     }
 
+    return res
+      .status(500)
+      .json({ success: false, message: 'Internal server error' });
+  }
+};
+
+/* ----------------------------------------------------
+   SEARCH USERS BY USERNAME
+----------------------------------------------------- */
+
+export const searchUsers = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+    const { query } = req.query;
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({ success: false, message: 'Query parameter required' });
+    }
+
+    // Search for users matching the query (case-insensitive)
+    const users = await prisma.user.findMany({
+      where: {
+        AND: [
+          {
+            OR: [
+              { username: { contains: query, mode: 'insensitive' } },
+              { name: { contains: query, mode: 'insensitive' } },
+            ],
+          },
+          { id: { not: user.id } }, // Exclude current user
+        ],
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+      },
+      take: 10, // Limit results
+    });
+
+    // Get existing friend requests and friendships to filter out
+    const [sentRequests, receivedRequests, declinedRequests, friendships] = await Promise.all([
+      prisma.friendRequest.findMany({
+        where: { fromId: user.id, status: 'pending' },
+        select: { toId: true },
+      }),
+      prisma.friendRequest.findMany({
+        where: { toId: user.id, status: 'pending' },
+        select: { fromId: true },
+      }),
+      prisma.friendRequest.findMany({
+        where: { fromId: user.id, status: 'declined' },
+        select: { toId: true },
+      }),
+      prisma.friendship.findMany({
+        where: {
+          OR: [{ userAId: user.id }, { userBId: user.id }],
+        },
+        select: { userAId: true, userBId: true },
+      }),
+    ]);
+
+    const sentRequestIds = new Set(sentRequests.map((r) => r.toId));
+    const receivedRequestIds = new Set(receivedRequests.map((r) => r.fromId));
+    const declinedRequestIds = new Set(declinedRequests.map((r) => r.toId));
+    const friendIds = new Set(
+      friendships.flatMap((f) => [f.userAId, f.userBId]).filter((id) => id !== user.id)
+    );
+
+    // Add status to each user
+    const formatted = users.map((u) => ({
+      id: u.id,
+      username: u.username,
+      name: u.name,
+      status: sentRequestIds.has(u.id)
+        ? 'pending'
+        : receivedRequestIds.has(u.id)
+        ? 'received'
+        : friendIds.has(u.id)
+        ? 'friends'
+        : declinedRequestIds.has(u.id)
+        ? 'declined'
+        : 'none',
+    }));
+
+    return res.status(200).json({ success: true, data: formatted });
+  } catch (error) {
+    console.error(error);
     return res
       .status(500)
       .json({ success: false, message: 'Internal server error' });

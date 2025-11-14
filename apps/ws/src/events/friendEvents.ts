@@ -10,4 +10,9 @@ export function registerFriendEvents(io: Server, socket: Socket) {
     // Emit to both users (Socket.IO adapter handles Redis pub/sub automatically)
     io.to(data.userId).emit('friend_request_accepted', data);
   });
+
+  socket.on('friend_request_declined', (data) => {
+    // Emit to the sender that their request was declined
+    io.to(data.userId).emit('friend_request_declined', data);
+  });
 }
