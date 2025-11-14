@@ -48,20 +48,27 @@ function ChatSideBar() {
     socket,
     activeChatId: selectedFriend?.id,
     onReceivedRequest: addOrUpdateReceivedRequest,
-    onFriendAccepted: (data) => {
-      // When someone accepts your friend request, add them to your friends list
-      // Note: senderId is the person who originally sent the request (you)
-      // recipientId is the person who accepted (the new friend)
-      addFriendIfMissing({
-        id: data.recipientId,
-        name: data.recipientName,
-        username: '', // Username not provided in this event
-        avatar: data.recipientAvatar || '',
-        lastMessage: '',
-        unread: 0,
-        time: new Date().toISOString(),
-      });
-      removeFriendRequest(data.requestId);
+    onFriendAccepted: async (data) => {
+      // When someone accepts your friend request, fetch the updated friends list
+      // to get complete friend data including username
+      try {
+        const updatedFriends = await chatService.getFriends();
+        setFriends(updatedFriends);
+        removeFriendRequest(data.requestId);
+      } catch (error) {
+        console.error('Error fetching updated friends list:', error);
+        // Fallback: add with partial data
+        addFriendIfMissing({
+          id: data.recipientId,
+          name: data.recipientName,
+          username: '',
+          avatar: data.recipientAvatar || '',
+          lastMessage: '',
+          unread: 0,
+          time: new Date().toISOString(),
+        });
+        removeFriendRequest(data.requestId);
+      }
     },
     onFriendDeclined: (data) => {
       // Update the sent request status to 'declined'
@@ -124,6 +131,10 @@ function ChatSideBar() {
 
         removeFriendRequest(requestId);
 
+        // Fetch updated friends list to include the newly accepted friend
+        const updatedFriends = await chatService.getFriends();
+        setFriends(updatedFriends);
+
         if (socket && data.data) {
           socket.emit('friend_request_accepted', {
             requestId: data.data.requestId,
@@ -142,7 +153,7 @@ function ChatSideBar() {
         setLoadingRequestId(null);
       }
     },
-    [socket, removeFriendRequest]
+    [socket, removeFriendRequest, setFriends]
   );
 
   const handleDeclineRequest = useCallback(
