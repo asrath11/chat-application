@@ -26,24 +26,30 @@ export const useChatData = (activeTab: TabValue) => {
     fetchCurrentUser();
   }, []);
 
-  // Fetch friends
+  // Fetch friends and all requests on mount for badge counts
   useEffect(() => {
-    const fetchFriends = async () => {
+    const fetchInitialData = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const friendsData = await chatService.getFriends();
+        const [friendsData, sentData, receivedData] = await Promise.all([
+          chatService.getFriends(),
+          chatService.getSentRequests(),
+          chatService.getReceivedRequests(),
+        ]);
         setFriends(friendsData);
+        setSentRequests(sentData);
+        setReceivedRequests(receivedData);
       } catch (err) {
-        console.error('Error fetching friends:', err);
+        console.error('Error fetching initial data:', err);
         setError('Failed to load chats. Please try again.');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchFriends();
+    fetchInitialData();
   }, []);
 
   // Fetch requests based on active tab
@@ -107,7 +113,7 @@ export const useChatData = (activeTab: TabValue) => {
 
   const markMessagesAsRead = useCallback((friendId: string) => {
     setFriends((prev) =>
-      prev.map((f) => (f.id === friendId ? { ...f, unread: 0 } : f))
+      prev.map((f) => (f.id === friendId ? { ...f, unread: 0 } : f))  
     );
   }, []);
 

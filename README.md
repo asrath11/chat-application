@@ -36,21 +36,21 @@ chat-application/
 All required features have been fully implemented:
 
 - ✅ **User Authentication**: Complete signup/login flow with JWT-based authentication
-- ✅ **Friend Request System**: 
+- ✅ **Friend Request System**:
   - Send friend requests to other users
   - Receive and view incoming friend requests
   - Accept or reject friend requests
   - View sent friend requests with status tracking
-- ✅ **Real-time Notifications**: 
+- ✅ **Real-time Notifications**:
   - Toast notifications for incoming friend requests
   - Real-time updates when friend requests are accepted
   - WebSocket-based notification delivery
-- ✅ **Real-time Messaging**: 
+- ✅ **Real-time Messaging**:
   - Live chat with accepted friends using WebSocket
   - Redis Pub/Sub for scalable multi-instance messaging
   - Message persistence in PostgreSQL
   - Message history retrieval
-- ✅ **WhatsApp-like Dashboard**: 
+- ✅ **WhatsApp-like Dashboard**:
   - Friend list sidebar
   - Chat interface with message bubbles
   - Responsive design for mobile and desktop
@@ -65,6 +65,7 @@ All required features have been fully implemented:
 ### 💡 Creative Feature: Enhanced Friend Request Management
 
 **Unique Implementation**: Comprehensive friend request tracking system with:
+
 - Separate views for sent and received friend requests
 - Real-time status updates (pending → accepted/declined)
 - Visual indicators for request states
@@ -88,6 +89,7 @@ This goes beyond basic friend request functionality by providing complete visibi
 ## 🛠️ Tech Stack
 
 ### Frontend (`apps/frontend`)
+
 - **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
@@ -97,6 +99,7 @@ This goes beyond basic friend request functionality by providing complete visibi
 - **WebSocket**: Socket.IO Client
 
 ### Backend (`apps/backend`)
+
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Language**: TypeScript
@@ -106,6 +109,7 @@ This goes beyond basic friend request functionality by providing complete visibi
 - **Password Hashing**: bcryptjs
 
 ### WebSocket Server (`apps/ws`)
+
 - **Runtime**: Node.js
 - **WebSocket Library**: Socket.IO
 - **Language**: TypeScript
@@ -113,6 +117,7 @@ This goes beyond basic friend request functionality by providing complete visibi
 - **Authentication**: JWT verification
 
 ### Database (`packages/database`)
+
 - **Database**: PostgreSQL
 - **ORM**: Prisma
 - **Migrations**: Prisma Migrate
@@ -166,12 +171,14 @@ apps/
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
-git clone <repository-url>
+git clone https://github.com/asrath11/chat-application.git
 cd chat-application
 ```
 
 2. **Install dependencies**
+
 ```bash
 pnpm install
 ```
@@ -181,20 +188,22 @@ pnpm install
 Create `.env` files in each app directory based on the `.env.example` files:
 
 **`packages/database/.env`**
+
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/chatapp
 ```
 
 **`apps/backend/.env`**
+
 ```env
 PORT=5000
-DATABASE_URL=postgresql://user:password@localhost:5432/chatapp
 JWT_SECRET=your-super-secret-jwt-key-here
 JWT_EXPIRES_IN=1d
 FRONTEND_URL=http://localhost:3000
 ```
 
 **`apps/ws/.env`**
+
 ```env
 WS_PORT=8000
 REDIS_URL=rediss://default:password@your-redis-host:6379
@@ -203,12 +212,14 @@ CORS_ORIGIN=http://localhost:3000
 ```
 
 **`apps/frontend/.env`**
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 NEXT_PUBLIC_WS_URL=ws://localhost:8000
 ```
 
 4. **Set up the database**
+
 ```bash
 cd packages/database
 pnpm prisma migrate dev
@@ -226,6 +237,7 @@ pnpm dev
 Or run each service individually:
 
 **Backend API Server**
+
 ```bash
 cd apps/backend
 pnpm dev
@@ -233,6 +245,7 @@ pnpm dev
 ```
 
 **WebSocket Server**
+
 ```bash
 cd apps/ws
 pnpm dev
@@ -240,6 +253,7 @@ pnpm dev
 ```
 
 **Frontend**
+
 ```bash
 cd apps/frontend
 pnpm dev
@@ -249,19 +263,23 @@ pnpm dev
 ## 📡 API Endpoints
 
 ### Authentication
+
 - `POST /auth/signup` - Register a new user
 - `POST /auth/login` - Login user
 
 ### Friend Requests
+
 - `POST /friend-request` - Send a friend request
 - `GET /friend-request/sent` - Get sent friend requests
 - `GET /friend-request/incoming` - Get received friend requests
 - `POST /friend-request/respond` - Accept or reject a friend request
 
 ### Friends
+
 - `GET /friends` - Get list of friends
 
 ### Messages
+
 - `POST /messages` - Send a message
 - `GET /messages/:friendId` - Get message history with a friend
 - `GET /messages/unread/count` - Get unread message count
@@ -269,37 +287,43 @@ pnpm dev
 ## 🔌 WebSocket Events
 
 ### Client → Server
+
 - `send_message` - Send a message to a friend
 - `friend_request_sent` - Notify when friend request is sent
 - `friend_request_accepted` - Notify when friend request is accepted
 
 ### Server → Client
+
 - `receive_message` - Receive a new message
 - `friend_request_received` - Receive a friend request notification
 - `friend_request_accepted` - Receive friend request acceptance notification
 
-
 ## 🗄️ Database Schema
 
 ### User
+
 - id, name, username, email, password
 - Relations: sentRequests, receivedRequests, friendships, messages
 
 ### FriendRequest
+
 - id, fromId, toId, status (pending/accepted/declined)
 - Relations: from (User), to (User)
 
 ### Friendship
+
 - id, userAId, userBId, friendSince
 - Relations: userA (User), userB (User)
 
 ### Message
+
 - id, content, senderId, recipientId, isRead, createdAt
 - Relations: sender (User), recipient (User)
 
 ## 🎨 UI Components
 
 The application uses shadcn/ui components:
+
 - Avatar, Button, Input, Tabs
 - Dialog, Toast notifications
 - Custom chat components (ChatWindow, ChatSideBar, MessageList)
@@ -323,6 +347,7 @@ The application uses shadcn/ui components:
 ## 📝 Development Notes
 
 ### Adding New Features
+
 1. Update Prisma schema in `packages/database/prisma/schema.prisma`
 2. Run `pnpm prisma migrate dev` to create migration
 3. Add backend routes and controllers in `apps/backend/src`
@@ -330,6 +355,7 @@ The application uses shadcn/ui components:
 5. Update frontend components in `apps/frontend`
 
 ### Code Quality
+
 - TypeScript for type safety
 - Zod for runtime validation
 - ESLint for code linting
@@ -338,12 +364,14 @@ The application uses shadcn/ui components:
 ## ✅ Assignment Checklist
 
 ### Required Components
+
 - ✅ **apps/frontend**: Next.js App Router with TypeScript and Tailwind CSS
 - ✅ **apps/backend**: Express.js REST API with JWT authentication
 - ✅ **apps/ws**: WebSocket server with Socket.IO and Redis Pub/Sub
 - ✅ **packages/database**: Shared Prisma client and schema
 
 ### Required Features
+
 - ✅ Signup/Login functionality
 - ✅ Friend request flow (send, receive, accept, reject)
 - ✅ Notification system for incoming requests
@@ -351,10 +379,12 @@ The application uses shadcn/ui components:
 - ✅ Dashboard with friend list and chat interface
 
 ### Bonus Features
+
 - ✅ Unread message tracking
 - ✅ Enhanced friend request management (creative feature)
 
 ### Code Quality
+
 - ✅ Clean monorepo architecture with Turborepo
 - ✅ TypeScript throughout the entire codebase
 - ✅ Proper separation of concerns
@@ -365,6 +395,7 @@ The application uses shadcn/ui components:
 ## 🚧 Future Enhancements
 
 Potential features for production deployment:
+
 - [ ] Group chats
 - [ ] File/image sharing
 - [ ] Voice messages
