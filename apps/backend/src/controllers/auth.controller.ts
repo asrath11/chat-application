@@ -55,7 +55,7 @@ export const signup = async (
 
     res.status(201).json({
       success: true,
-      data: { user },
+      data: { user, token },
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -114,7 +114,7 @@ export const signin = async (
 
     res.status(200).json({
       success: true,
-      data: { user: userResponse },
+      data: { user: userResponse, token },
     });
   } catch (error) {
     console.error('Signin error:', error);
@@ -145,7 +145,20 @@ export const signout = async (_req: Request, res: Response) => {
 // -------------------- Get Current User (/me) --------------------
 export const getMe = async (req: Request, res: Response) => {
   try {
-    const token = req.cookies.token;
+    let token: string | undefined;
+
+    // Try to get token from Authorization header first
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    // Otherwise, try to get it from cookies
+    else if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
     if (!token) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
@@ -159,6 +172,7 @@ export const getMe = async (req: Request, res: Response) => {
       select: {
         id: true,
         username: true,
+        name: true,
         email: true,
         createdAt: true,
         updatedAt: true,

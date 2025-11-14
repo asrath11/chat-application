@@ -217,13 +217,44 @@ export const respondToFriendRequest = async (
         .json({ success: false, message: 'Request not found' });
     }
 
+    // Check if request is already processed
+    if (request.status !== 'pending') {
+      return res.status(400).json({
+        success: false,
+        message: `Request already ${request.status}`,
+      });
+    }
+
     if (action === 'reject') {
       await prisma.friendRequest.update({
         where: { id: requestId },
-        data: { status: 'rejected' },
+        data: { status: 'declined' },
       });
 
       return res.json({ success: true, message: 'Request rejected' });
+    }
+
+    // Check if friendship already exists
+    const existingFriendship = await prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { userAId: request.fromId, userBId: request.toId },
+          { userAId: request.toId, userBId: request.fromId },
+        ],
+      },
+    });
+
+    if (existingFriendship) {
+      // Update request status but don't create duplicate friendship
+      await prisma.friendRequest.update({
+        where: { id: requestId },
+        data: { status: 'accepted' },
+      });
+
+      return res.status(400).json({
+        success: false,
+        message: 'Friendship already exists',
+      });
     }
 
     // Accept request → Create friendship
@@ -252,8 +283,17 @@ export const respondToFriendRequest = async (
         myAvatar: '',
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
+
+    // Handle unique constraint violation (duplicate friendship)
+    if (error.code === 'P2002') {
+      return res.status(409).json({
+        success: false,
+        message: 'Friendship already exists',
+      });
+    }
+
     return res
       .status(500)
       .json({ success: false, message: 'Internal server error' });

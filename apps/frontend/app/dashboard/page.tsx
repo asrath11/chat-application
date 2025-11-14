@@ -8,8 +8,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@workspace/ui/components/resizable';
-import { ChatPanel } from '@/features/dashboard/components/ChatPanel';
-import { ChatSideBar } from '@/features/dashboard/components/ChatSideBar';
+import { ChatPanel } from '@/features/dashboard/chat-window/ChatPanel';
+import { ChatSideBar } from '@/features/dashboard/chat-sidebar/ChatSideBar';
 
 interface Friend {
   id: string;
@@ -49,8 +49,11 @@ export default function Dashboard() {
         className='h-full w-full border rounded-lg'
       >
         <ResizablePanel minSize={15} maxSize={25} defaultSize={20}>
-          <div className='h-full p-4 border-r'>
-            <ChatSideBar onSelectChat={setSelectedFriend} />
+          <div className='h-full border-r'>
+            <ChatSideBar
+              onSelectChat={setSelectedFriend}
+              activeChatId={selectedFriend?.id}
+            />
           </div>
         </ResizablePanel>
 

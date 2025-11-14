@@ -22,7 +22,7 @@ type WebSocketContextType = {
 const WebSocketContext = createContext<WebSocketContextType>({
   socket: null,
   isConnected: false,
-  sendMessage: () => {},
+  sendMessage: () => { },
 });
 
 export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
@@ -33,8 +33,8 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000; // 3 seconds
 
-  const connect = useCallback(async () => {
-    if (!user || !isAuthenticated || socketRef.current?.connected) return;
+  const connect = useCallback(async (): Promise<Socket | null> => {
+    if (!user || !isAuthenticated || socketRef.current?.connected) return null;
 
     try {
       // Fetch the latest user data including token
@@ -96,7 +96,7 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
       return socket;
     } catch (error) {
       console.error('WebSocket connection error:', error);
-      throw error;
+      return null;
     }
   }, [user, isAuthenticated]);
 
@@ -154,11 +154,10 @@ export const WebSocketProvider = ({ children }: { children: ReactNode }) => {
   );
 
   // Expose the context value
-  const value = {
-    socket: socketRef.current,
+  const value: WebSocketContextType = {
+    socket: (socketRef.current as Socket | null) ?? null,
     isConnected,
     sendMessage,
-    subscribe, // Expose subscribe method for components to listen to events
   };
 
   return (

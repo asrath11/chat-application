@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Check if user is logged in on initial load
     const checkAuth = async () => {
       try {
-        const { data:res } = await api.get('/auth/me');
+        const { data: res } = await api.get('/auth/me');
         setUser(res.data.user);
       } catch (error) {
         setUser(null);
@@ -44,8 +44,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const { data:res } = await api.post('/auth/signin', { email, password });
+      const { data: res } = await api.post('/auth/signin', { email, password });
       setUser(res.data.user);
+
+      // Store token in localStorage for API requests
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+      }
+
       router.push('/dashboard');
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Login failed');
@@ -55,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       await api.post('/auth/signout', {});
+      localStorage.removeItem('token');
     } catch (error) {
       console.error('Logout error:', error);
     } finally {

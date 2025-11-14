@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChatWindow } from './ChatWindow';
+import { ChatWindow } from '../chat-window/ChatWindow';
 
 interface Friend {
   id: string;

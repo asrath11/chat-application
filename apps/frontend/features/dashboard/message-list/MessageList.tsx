@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Button } from '@workspace/ui/components/button';
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from '@workspace/ui/components/avatar';
-import { NewChatDialog } from './NewChatDialog';
+import { NewChatDialog } from '../chat-window/NewChatDialog';
 
 interface Chat {
   id: string;
@@ -20,10 +19,48 @@ interface MessageListProps {
   friends: Chat[];
   onNewChat: () => void;
   onSelectChat: (id: string) => void;
+  activeChatId?: string;
 }
 
-export function MessageList({ friends, onSelectChat }: MessageListProps) {
+export function MessageList({
+  friends,
+  onSelectChat,
+  activeChatId,
+}: MessageListProps) {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Today - show time
+    if (diffDays === 0) {
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    }
+
+    // Yesterday
+    if (diffDays === 1) {
+      return 'Yesterday';
+    }
+
+    // Within last week - show day name
+    if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'long' });
+    }
+
+    // Older - show date
+    return date.toLocaleDateString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit',
+    });
+  };
 
   const handleStartChat = (userId: string) => {
     console.log('Starting chat with user:', userId);
@@ -51,15 +88,6 @@ export function MessageList({ friends, onSelectChat }: MessageListProps) {
         {friends.length === 0 ? (
           <div className='flex flex-col items-center justify-center h-full text-center p-8'>
             <p className='text-muted-foreground'>No messages yet</p>
-            <NewChatDialog
-              open={isNewChatOpen}
-              onOpenChange={setIsNewChatOpen}
-              onStartChat={handleStartChat}
-            >
-              <Button variant='ghost' className='mt-2'>
-                Start a new conversation
-              </Button>
-            </NewChatDialog>
           </div>
         ) : (
           <div className='divide-y'>
@@ -74,7 +102,7 @@ export function MessageList({ friends, onSelectChat }: MessageListProps) {
                     <AvatarImage src={friend.avatar} alt={friend.name} />
                     <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  {friend.unread > 0 && (
+                  {friend.unread > 0 && friend.id !== activeChatId && (
                     <span className='absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center'>
                       {friend.unread}
                     </span>
@@ -84,7 +112,7 @@ export function MessageList({ friends, onSelectChat }: MessageListProps) {
                   <div className='flex justify-between items-center'>
                     <p className='font-medium truncate'>{friend.name}</p>
                     <span className='text-xs text-muted-foreground'>
-                      {friend.time}
+                      {formatTime(friend.time)}
                     </span>
                   </div>
                   {friend.lastMessage && (
