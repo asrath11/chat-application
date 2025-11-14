@@ -38,4 +38,27 @@ export const getFriends = async (req: Request, res: Response) => {
         const lastMessage = await prisma.message.findFirst({
           where: {
             OR: [
-             
+              { senderId: user.id, recipientId: friend.id },
+              { senderId: friend.id, recipientId: user.id },
+            ],
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        return {
+          ...friend,
+          unread: unreadCount,
+          lastMessage: lastMessage?.content || '',
+          time: lastMessage?.createdAt.toISOString() || new Date().toISOString(),
+        };
+      })
+    );
+
+    return res.status(200).json({ success: true, data: formatted });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Internal server error' });
+  }
+};

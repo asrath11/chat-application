@@ -1,4 +1,5 @@
 import { Server, Socket } from 'socket.io';
+import { prisma } from '@workspace/database';
 // import Redis from 'ioredis';
 
 // // Separate Redis clients for pub/sub
@@ -31,5 +32,28 @@ export function registerMessageEvents(io: Server, socket: Socket) {
 
     // Emit to recipient (Socket.IO adapter handles Redis pub/sub automatically)
     io.to(toUserId).emit('receive_message', messageData);
+  });
+
+  // user reads messages (when viewing chat)
+  socket.on('messages_read', async (data) => {
+    const { friendId } = data;
+    const userId = (socket as any).userId;
+
+    try {
+      // Mark all messages from friendId to userId as read
+      await prisma.message.updateMany({
+        where: {
+          senderId: friendId,
+          recipientId: userId,
+          isRead: false,
+        },
+        data: { isRead: true },
+      });
+
+      // Notify the sender that their messages were read
+      io.to(friendId).emit('messages_read', { friendId: userId });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
   });
 }

@@ -188,12 +188,22 @@ function ChatSideBar({ onSelectChat }: ChatSideBarProps) {
       console.log('🛑 stop typing from:', from);
     };
 
+    // 👁️ Messages read (when recipient views the chat)
+    const onMessagesRead = ({ friendId }: { friendId: string }) => {
+      console.log('👁️ messages read by friend:', friendId);
+      // Reset unread count for this friend
+      setFriends((prev) =>
+        prev.map((f) => (f.id === friendId ? { ...f, unread: 0 } : f))
+      );
+    };
+
     // Attach Listeners
     socket.on('friend_request_received', onFriendRequest);
     socket.on('friend_request_accepted', onFriendAccepted);
     socket.on('receive_message', onMessage);
     socket.on('typing', onTyping);
     socket.on('stop_typing', onStopTyping);
+    socket.on('messages_read', onMessagesRead);
 
     // Cleanup Listeners
     return () => {
@@ -202,6 +212,7 @@ function ChatSideBar({ onSelectChat }: ChatSideBarProps) {
       socket.off('receive_message', onMessage);
       socket.off('typing', onTyping);
       socket.off('stop_typing', onStopTyping);
+      socket.off('messages_read', onMessagesRead);
     };
   }, [socket]);
 
@@ -286,6 +297,10 @@ function ChatSideBar({ onSelectChat }: ChatSideBarProps) {
     const selectedFriend = friends.find((f) => f.id === chatId);
     console.log(selectedFriend);
     if (selectedFriend) {
+      // Reset unread count when chat is opened
+      setFriends((prev) =>
+        prev.map((f) => (f.id === chatId ? { ...f, unread: 0 } : f))
+      );
       onSelectChat(selectedFriend);
     }
   };

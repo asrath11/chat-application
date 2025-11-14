@@ -12,6 +12,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
+    "@workspace/database": "workspace:*",
     "@socket.io/redis-adapter": "^8.3.0",
     "@types/jsonwebtoken": "^9.0.10",
     "dotenv": "^17.2.3",
