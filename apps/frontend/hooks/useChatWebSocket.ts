@@ -9,12 +9,17 @@ interface UseChatWebSocketProps {
   onReceivedRequest: (request: FriendRequest) => void;
   onFriendAccepted: (data: {
     requestId: string;
-    friendId: string;
-    friendName: string;
-    friendUsername: string;
-    friendAvatar?: string;
+    senderId: string;
+    recipientId: string;
+    recipientName: string;
+    recipientAvatar?: string;
   }) => void;
-  onFriendDeclined: (data: { requestId: string; recipientName: string }) => void;
+  onFriendDeclined: (data: {
+    requestId: string;
+    senderId: string;
+    recipientId: string;
+    recipientName: string;
+  }) => void;
   onMessage: (msg: any) => void;
   onMessagesRead: (friendId: string) => void;
 }
@@ -33,14 +38,14 @@ export const useChatWebSocket = ({
       console.log('🔥 friend_request_received:', data);
       onReceivedRequest({
         id: data.requestId,
-        name: data.fromName,
-        username: data.fromUsername,
-        avatar: data.fromAvatar || '',
+        name: data.senderName,
+        username: data.senderUsername,
+        avatar: data.senderAvatar || '',
         status: 'pending',
       });
 
       toast.info('New Friend Request', {
-        description: `${data.fromName} (@${data.fromUsername}) sent you a friend request`,
+        description: `${data.senderName} (@${data.senderUsername}) sent you a friend request`,
       });
     },
     [onReceivedRequest]
@@ -51,14 +56,14 @@ export const useChatWebSocket = ({
       console.log('🎉 friend_request_accepted:', data);
       onFriendAccepted({
         requestId: data.requestId,
-        friendId: data.friendId,
-        friendName: data.friendName,
-        friendUsername: data.friendUsername || '',
-        friendAvatar: data.friendAvatar || '',
+        senderId: data.senderId,
+        recipientId: data.recipientId,
+        recipientName: data.recipientName,
+        recipientAvatar: data.recipientAvatar || '',
       });
 
       toast.success('Friend Request Accepted', {
-        description: `You are now friends with ${data.friendName}`,
+        description: `You are now friends with ${data.recipientName}`,
       });
     },
     [onFriendAccepted]
@@ -69,6 +74,8 @@ export const useChatWebSocket = ({
       console.log('❌ friend_request_declined:', data);
       onFriendDeclined({
         requestId: data.requestId,
+        senderId: data.senderId,
+        recipientId: data.recipientId,
         recipientName: data.recipientName,
       });
 

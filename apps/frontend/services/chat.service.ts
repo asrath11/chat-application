@@ -40,7 +40,7 @@ export const chatService = {
     return data;
   },
 
-  async logout() {
-    await api.post('/auth/logout');
+  async signout() {
+    await api.post('/auth/signout');
   },
 };

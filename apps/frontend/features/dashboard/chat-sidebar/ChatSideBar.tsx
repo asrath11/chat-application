@@ -47,11 +47,14 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
     activeChatId,
     onReceivedRequest: addOrUpdateReceivedRequest,
     onFriendAccepted: (data) => {
+      // When someone accepts your friend request, add them to your friends list
+      // Note: senderId is the person who originally sent the request (you)
+      // recipientId is the person who accepted (the new friend)
       addFriendIfMissing({
-        id: data.friendId,
-        name: data.friendName,
-        username: data.friendUsername,
-        avatar: data.friendAvatar || '',
+        id: data.recipientId,
+        name: data.recipientName,
+        username: '', // Username not provided in this event
+        avatar: data.recipientAvatar || '',
         lastMessage: '',
         unread: 0,
         time: new Date().toISOString(),
@@ -121,11 +124,11 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
 
         if (socket && data.data) {
           socket.emit('friend_request_accepted', {
-            requestId: requestId,
-            userId: data.data.friendId,
-            friendId: data.data.myId,
-            friendName: data.data.myName,
-            friendAvatar: data.data.myAvatar,
+            requestId: data.data.requestId,
+            senderId: data.data.senderId,
+            recipientId: data.data.recipientId,
+            recipientName: data.data.recipientName,
+            recipientAvatar: data.data.recipientAvatar,
           });
         }
 
@@ -151,7 +154,8 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
         if (socket && data.data) {
           socket.emit('friend_request_declined', {
             requestId: requestId,
-            userId: data.data.senderId,
+            senderId: data.data.senderId, // The person who sent the request
+            recipientId: data.data.recipientId, // The person declining
             recipientName: data.data.recipientName,
           });
         }
@@ -171,7 +175,6 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
     async (username: string) => {
       try {
         const data = await chatService.sendFriendRequest(username);
-        // console.log(username)
         if (data.success && data.data) {
           setSentRequests((prev) => [
             ...prev,
@@ -186,10 +189,10 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
           if (socket && data.data.recipientId) {
             socket.emit('friend_request_sent', {
               requestId: data.data.id,
-              toUserId: data.data.recipientId,
-              fromName: data.data.fromName,
-              fromUsername: data.data.fromUsername,
-              fromAvatar: data.data.fromAvatar,
+              recipientId: data.data.recipientId,
+              senderName: data.data.senderName,
+              senderUsername: data.data.senderUsername,
+              senderAvatar: data.data.senderAvatar,
             });
           }
 
@@ -222,9 +225,9 @@ function ChatSideBar({ onSelectChat, activeChatId }: ChatSideBarProps) {
 
   const handleSignOut = useCallback(async () => {
     try {
-      await chatService.logout();
+      await chatService.signout();
       toast.success('Signed out successfully');
-      router.push('/login');
+      router.push('/signin');
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Failed to sign out');
