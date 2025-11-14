@@ -19,6 +19,7 @@ import {
 } from '@workspace/ui/components/avatar';
 import { chatService } from '@/services/chat.service';
 import { SearchedUser } from '@/types/chat.types';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface SendRequestDialogProps {
   onSendRequest: (username: string) => void;
@@ -31,26 +32,21 @@ export function SendRequestDialog({ onSendRequest }: SendRequestDialogProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const debouncedUsername = useDebounce(username, 300);
 
   // Search users as user types
   useEffect(() => {
-    if (username.trim().length < 2) {
+    if (debouncedUsername.trim().length < 2) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
     }
 
-    // Debounce search
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(async () => {
+    const searchUsers = async () => {
       setIsSearching(true);
       try {
-        const results = await chatService.searchUsers(username);
+        const results = await chatService.searchUsers(debouncedUsername);
         setSearchResults(results);
         setShowDropdown(true);
       } catch (error) {
@@ -58,14 +54,10 @@ export function SendRequestDialog({ onSendRequest }: SendRequestDialogProps) {
       } finally {
         setIsSearching(false);
       }
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
     };
-  }, [username]);
+
+    searchUsers();
+  }, [debouncedUsername]);
 
   useEffect(() => {
     if (!isOpen) {
