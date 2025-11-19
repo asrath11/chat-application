@@ -16,7 +16,7 @@ function ChatSideBar() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { friends, sentRequests, receivedRequests } = useFriend();
-  const { selectFriend } = useFriendStore();
+  const { selectFriend, clearUnread } = useFriendStore();
   const { currentUser, isLoading, error } = useAuthStore();
   const { logout } = useAuth();
   const {
@@ -60,6 +60,8 @@ function ChatSideBar() {
       const friend = friends.find((f) => f.id === friendId);
       if (friend) {
         selectFriend(friend);
+        // Clear unread count when chat is selected
+        clearUnread(friendId);
       }
     },
     [friends, selectFriend]

@@ -53,7 +53,11 @@ export function ChatWindow({
     // WebSocket listener for new messages
     useEffect(() => {
         const onReceiveMessage = (msg: any) => {
+            console.log('💬 ChatWindow received message:', msg, 'expecting from:', friendId);
+
             if (msg.fromUserId === friendId) {
+                console.log('✅ Message is from current friend, adding to chat');
+
                 setMessages((prev) => [
                     ...prev,
                     {
@@ -67,12 +71,16 @@ export function ChatWindow({
 
                 // Emit that messages have been read since chat is open
                 websocketService.emit('messages_read', { friendId });
+            } else {
+                console.log('⏭️ Message is from different friend, ignoring in this chat');
             }
         };
 
+        console.log('🎧 ChatWindow listening for messages from:', friendId);
         websocketService.on('receive_message', onReceiveMessage);
 
         return () => {
+            console.log('🔇 ChatWindow stopped listening for messages from:', friendId);
             websocketService.off('receive_message', onReceiveMessage);
         };
     }, [friendId]);
@@ -96,11 +104,14 @@ export function ChatWindow({
                 message: messageContent,
             });
 
+            const messageId = data.data?.id || Date.now().toString();
+            const messageTime = data.data?.createdAt || new Date().toISOString();
+
             const newMsg = {
-                id: data.data?.id || Date.now().toString(),
+                id: messageId,
                 content: messageContent,
                 senderId: 'me',
-                createdAt: data.data?.createdAt || new Date().toISOString(),
+                createdAt: messageTime,
                 isOwn: true,
             };
 
@@ -110,6 +121,8 @@ export function ChatWindow({
             websocketService.emitMessage({
                 recipientId: friendId,
                 message: messageContent,
+                id: messageId,
+                createdAt: messageTime,
             });
         } catch (error) {
             console.error('Error sending message:', error);

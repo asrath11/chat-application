@@ -69,18 +69,32 @@ export const useFriendStore = create<FriendState>()(
 
       // Messages & Unread
       updateLastMessage: (friendId, message, time) =>
-        set((state) => ({
-          friends: state.friends.map((f) =>
+        set((state) => {
+          console.log('📝 Updating last message for friend:', friendId, message);
+          const updatedFriends = state.friends.map((f) =>
             f.id === friendId ? { ...f, lastMessage: message, time } : f
-          ),
-        })),
+          );
+          
+          // Also update selectedFriend if it's the same friend
+          const updatedSelectedFriend = state.selectedFriend?.id === friendId
+            ? updatedFriends.find(f => f.id === friendId) || state.selectedFriend
+            : state.selectedFriend;
+          
+          return {
+            friends: updatedFriends,
+            selectedFriend: updatedSelectedFriend,
+          };
+        }),
 
       incrementUnread: (friendId) =>
-        set((state) => ({
-          friends: state.friends.map((f) =>
-            f.id === friendId ? { ...f, unread: f.unread + 1 } : f
-          ),
-        })),
+        set((state) => {
+          console.log('🔔 Incrementing unread for friend:', friendId);
+          return {
+            friends: state.friends.map((f) =>
+              f.id === friendId ? { ...f, unread: f.unread + 1 } : f
+            ),
+          };
+        }),
 
       clearUnread: (friendId) =>
         set((state) => ({

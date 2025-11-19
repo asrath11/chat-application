@@ -19,19 +19,23 @@ import { prisma } from '@workspace/database';
 export function registerMessageEvents(io: Server, socket: Socket) {
   // user sends a message
   socket.on('send_message', async (data) => {
-    const { toUserId, message, id, createdAt } = data;
+    const { recipientId, message, id, createdAt } = data;
     const fromUserId = (socket as any).userId;
+
+    console.log('📤 send_message:', { fromUserId, recipientId, message });
 
     const messageData = {
       id: id || Date.now().toString(),
       fromUserId,
-      toUserId,
+      toUserId: recipientId,
       message,
       createdAt: createdAt || new Date().toISOString(),
     };
 
     // Emit to recipient (Socket.IO adapter handles Redis pub/sub automatically)
-    io.to(toUserId).emit('receive_message', messageData);
+    io.to(recipientId).emit('receive_message', messageData);
+    
+    console.log('✅ Message sent to recipient:', recipientId);
   });
 
   // user reads messages (when viewing chat)

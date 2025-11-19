@@ -132,8 +132,17 @@ export class WebSocketService {
     this.on('receive_message', (msg: any) => {
       console.log('💬 receive_message:', msg);
 
-      const { selectedFriend } = useFriendStore.getState();
+      const { selectedFriend, friends } = useFriendStore.getState();
       
+      // Check if this friend exists in the store
+      const friendExists = friends.some(f => f.id === msg.fromUserId);
+      
+      if (!friendExists) {
+        console.warn('⚠️ Received message from unknown friend:', msg.fromUserId);
+        return;
+      }
+      
+      // Update last message and timestamp
       useFriendStore.getState().updateLastMessage(
         msg.fromUserId,
         msg.message,
@@ -228,7 +237,8 @@ export class WebSocketService {
     this.emit('friend_request_declined', data);
   }
 
-  emitMessage(data: { recipientId: string; message: string }) {
+  emitMessage(data: { recipientId: string; message: string; id?: string; createdAt?: string }) {
+    console.log('📤 Emitting message:', data);
     this.emit('send_message', data);
   }
 
