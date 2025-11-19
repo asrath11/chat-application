@@ -17,7 +17,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@workspace/ui/components/avatar';
-import { chatService } from '@/services/chat.service';
+import { friendService } from '@/services/friend.service';
 import { SearchedUser } from '@/types/chat.types';
 import { useDebounce } from '@/hooks/useDebounce';
 
@@ -46,7 +46,7 @@ export function SendRequestDialog({ onSendRequest }: SendRequestDialogProps) {
     const searchUsers = async () => {
       setIsSearching(true);
       try {
-        const results = await chatService.searchUsers(debouncedUsername);
+        const results = await friendService.searchUsers(debouncedUsername);
         setSearchResults(results);
         setShowDropdown(true);
       } catch (error) {

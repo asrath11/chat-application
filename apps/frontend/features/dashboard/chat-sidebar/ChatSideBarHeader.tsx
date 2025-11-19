@@ -13,7 +13,7 @@ import {
     DropdownMenuTrigger,
 } from '@workspace/ui/components/dropdown-menu';
 import { Button } from '@workspace/ui/components/button';
-import { CurrentUser } from '../../../types/chat.types';
+import { CurrentUser } from '../../../types/auth.types';
 
 interface ChatSideBarHeaderProps {
     currentUser: CurrentUser | null;

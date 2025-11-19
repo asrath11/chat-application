@@ -4,7 +4,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@workspace/ui/components/avatar';
-import { FriendRequest } from '../../../types/chat.types';
+import { FriendRequest } from '@/types/friend.types';
 
 interface SentRequestsListProps {
   requests: FriendRequest[];

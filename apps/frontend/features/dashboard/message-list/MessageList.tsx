@@ -17,7 +17,6 @@ interface Chat {
 
 interface MessageListProps {
   friends: Chat[];
-  onNewChat: () => void;
   onSelectChat: (id: string) => void;
   activeChatId?: string;
 }

@@ -1,102 +1,35 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { MessageSquare, User, UserPlus } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import { useWebSocket } from '@/contexts/WebSocketContext';
-import { useChat } from '@/contexts/ChatContext';
-import {
-  SendRequestDialog,
-  FriendRequests,
-  SentRequestsList,
-} from '../friend-requests';
+import { SentRequestsList, FriendRequests, SendRequestDialog } from '../friend-requests';
 import { MessageList } from '../message-list';
 import { Tabs, LoadingSpinner, ErrorDisplay, EmptyState } from '../shared';
 import { ChatSideBarHeader, ChatSideBarSearch } from './';
-import { useChatData } from '@/hooks/useChatData';
-import { useChatWebSocket } from '@/hooks/useChatWebSocket';
-import { chatService } from '@/services/chat.service';
-import { TabValue, Friend } from '@/types/chat.types';
+import { useAuthStore } from '@/stores/authStore';
+import { useFriendStore } from '@/stores/friendStore';
+import { TabValue } from '@/types/chat.types';
+import { useFriend } from '@/hooks/useFriend';
+import { useFriendRequestActions } from '@/hooks/useFriendRequestActions';
+import { useAuth } from '@/contexts/AuthContext';
 
 function ChatSideBar() {
-  const { selectedFriend, selectFriendById } = useChat();
   const [activeTab, setActiveTab] = useState<TabValue>('messages');
   const [searchQuery, setSearchQuery] = useState('');
-  const [loadingRequestId, setLoadingRequestId] = useState<string | null>(null);
 
-  const { socket } = useWebSocket();
-  const router = useRouter();
-
+  const { friends, sentRequests, receivedRequests } = useFriend();
+  const { selectFriend } = useFriendStore();
+  const { currentUser, isLoading, error } = useAuthStore();
+  const { logout } = useAuth();
   const {
-    friends,
-    setFriends,
-    sentRequests,
-    setSentRequests,
-    receivedRequests,
-    currentUser,
-    isLoading,
-    error,
-    setError,
-    addOrUpdateReceivedRequest,
-    addFriendIfMissing,
-    updateFriendMessage,
-    markMessagesAsRead,
-    removeFriendRequest,
-  } = useChatData(activeTab);
+    sendFriendRequest,
+    acceptFriendRequest,
+    declineFriendRequest,
+    loadingRespondRequestId
+  } = useFriendRequestActions();
 
-  // WebSocket integration
-  useChatWebSocket({
-    socket,
-    activeChatId: selectedFriend?.id,
-    onReceivedRequest: addOrUpdateReceivedRequest,
-    onFriendAccepted: async (data) => {
-      // When someone accepts your friend request, fetch the updated friends list
-      // to get complete friend data including username
-      try {
-        const updatedFriends = await chatService.getFriends();
-        setFriends(updatedFriends);
-        removeFriendRequest(data.requestId);
-      } catch (error) {
-        console.error('Error fetching updated friends list:', error);
-        // Fallback: add with partial data
-        addFriendIfMissing({
-          id: data.recipientId,
-          name: data.recipientName,
-          username: '',
-          avatar: data.recipientAvatar || '',
-          lastMessage: '',
-          unread: 0,
-          time: new Date().toISOString(),
-        });
-        removeFriendRequest(data.requestId);
-      }
-    },
-    onFriendDeclined: (data) => {
-      // Update the sent request status to 'declined'
-      setSentRequests((prev) =>
-        prev.map((req) =>
-          req.id === data.requestId ? { ...req, status: 'declined' } : req
-        )
-      );
-    },
-    onMessage: (msg) => updateFriendMessage(msg, selectedFriend?.id),
-    onMessagesRead: markMessagesAsRead,
-  });
-
-  // Computed values
   const totalUnreadCount = useMemo(
-    () => friends.reduce((sum, friend) => sum + friend.unread, 0),
+    () => friends.reduce((acc, friend) => acc + friend.unread, 0),
     [friends]
   );
-
-  const filteredFriends = useMemo(() => {
-    if (!searchQuery.trim()) return friends;
-    const query = searchQuery.toLowerCase();
-    return friends.filter(
-      (friend) =>
-        friend.name.toLowerCase().includes(query) ||
-        friend.username?.toLowerCase().includes(query)
-    );
-  }, [friends, searchQuery]);
 
   const chatTabs = useMemo(
     () => [
@@ -104,156 +37,45 @@ function ChatSideBar() {
         id: 'messages',
         label: 'Messages',
         icon: <MessageSquare className='h-5 w-5 sm:h-6 sm:w-6' strokeWidth={2} />,
-        badge: totalUnreadCount,
+        badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
       },
       {
         id: 'received-requests',
         label: 'Received Requests',
         icon: <User className='h-5 w-5 sm:h-6 sm:w-6' strokeWidth={2} />,
-        badge: receivedRequests.length,
+        badge: receivedRequests.length > 0 ? receivedRequests.length : undefined,
       },
       {
         id: 'sent-requests',
         label: 'Sent Requests',
         icon: <UserPlus className='h-5 w-5 sm:h-6 sm:w-6' strokeWidth={2} />,
-        badge: sentRequests.length,
+        badge: sentRequests.length > 0 ? sentRequests.length : undefined,
       },
     ],
     [totalUnreadCount, receivedRequests.length, sentRequests.length]
   );
 
-  // Event handlers
-  const handleAcceptRequest = useCallback(
-    async (requestId: string) => {
-      try {
-        setLoadingRequestId(requestId);
-        const data = await chatService.respondToRequest(requestId, 'accept');
-
-        removeFriendRequest(requestId);
-
-        // Fetch updated friends list to include the newly accepted friend
-        const updatedFriends = await chatService.getFriends();
-        setFriends(updatedFriends);
-
-        if (socket && data.data) {
-          socket.emit('friend_request_accepted', {
-            requestId: data.data.requestId,
-            senderId: data.data.senderId,
-            recipientId: data.data.recipientId,
-            recipientName: data.data.recipientName,
-            recipientAvatar: data.data.recipientAvatar,
-          });
-        }
-
-        toast.success('Friend request accepted');
-      } catch (error) {
-        console.error('Error accepting request:', error);
-        toast.error('Failed to accept request');
-      } finally {
-        setLoadingRequestId(null);
+  const handleChatSelect = useCallback(
+    (friendId: string) => {
+      const friend = friends.find((f) => f.id === friendId);
+      if (friend) {
+        selectFriend(friend);
       }
     },
-    [socket, removeFriendRequest, setFriends]
+    [friends, selectFriend]
   );
 
-  const handleDeclineRequest = useCallback(
-    async (requestId: string) => {
-      try {
-        setLoadingRequestId(requestId);
-        const data = await chatService.respondToRequest(requestId, 'reject');
-        removeFriendRequest(requestId);
-
-        // Emit WebSocket event to notify the sender
-        if (socket && data.data) {
-          socket.emit('friend_request_declined', {
-            requestId: requestId,
-            senderId: data.data.senderId, // The person who sent the request
-            recipientId: data.data.recipientId, // The person declining
-            recipientName: data.data.recipientName,
-          });
-        }
-
-        toast.success('Friend request declined');
-      } catch (error) {
-        console.error('Error declining request:', error);
-        toast.error('Failed to decline request');
-      } finally {
-        setLoadingRequestId(null);
-      }
-    },
-    [removeFriendRequest, socket]
-  );
-
-  const handleSendRequest = useCallback(
-    async (username: string) => {
-      try {
-        const data = await chatService.sendFriendRequest(username);
-        if (data.success && data.data) {
-          setSentRequests((prev) => [
-            ...prev,
-            {
-              id: data.data.id,
-              name: data.data.name,
-              username: data.data.username,
-              status: 'pending',
-            },
-          ]);
-
-          if (socket && data.data.recipientId) {
-            socket.emit('friend_request_sent', {
-              requestId: data.data.id,
-              recipientId: data.data.recipientId,
-              senderName: data.data.senderName,
-              senderUsername: data.data.senderUsername,
-              senderAvatar: data.data.senderAvatar,
-            });
-          }
-
-          toast.success('Friend request sent', {
-            description: `Request sent to ${data.data.name}`,
-          });
-        }
-      } catch (error: any) {
-        const errorMsg =
-          error.response?.data?.message || 'Failed to send request';
-        setError(errorMsg);
-        toast.error('Error', { description: errorMsg });
-      }
-    },
-    [socket, setSentRequests, setError]
-  );
-
-  const handleSelectChat = useCallback(
-    (chatId: string) => {
-      setFriends((prev) =>
-        prev.map((f) => (f.id === chatId ? { ...f, unread: 0 } : f))
-      );
-      selectFriendById(chatId, friends);
-    },
-    [friends, selectFriendById, setFriends]
-  );
 
   const handleSignOut = useCallback(async () => {
     try {
-      await chatService.signout();
-      toast.success('Signed out successfully');
-      router.push('/signin');
+      await logout();
     } catch (error) {
       console.error('Error signing out:', error);
-      toast.error('Failed to sign out');
     }
-  }, [router]);
+  }, [logout]);
 
-  const handleTabChange = useCallback(
-    (tabId: string) => {
-      setActiveTab(tabId as TabValue);
-      setError(null);
-    },
-    [setError]
-  );
-
-  const handleNewChat = useCallback(() => {
-    console.log('Start new chat');
+  const handleTabChange = useCallback((id: string) => {
+    setActiveTab(id as TabValue);
   }, []);
 
   // Render
@@ -283,10 +105,8 @@ function ChatSideBar() {
                 <ErrorDisplay message={error} />
               ) : (
                 <MessageList
-                  friends={filteredFriends}
-                  onNewChat={handleNewChat}
-                  onSelectChat={handleSelectChat}
-                  activeChatId={selectedFriend?.id}
+                  friends={friends}
+                  onSelectChat={handleChatSelect}
                 />
               )}
             </div>
@@ -310,14 +130,12 @@ function ChatSideBar() {
               ) : receivedRequests.length === 0 ? (
                 <EmptyState message='No pending friend requests' />
               ) : (
-                <div className='p-2 sm:p-4'>
-                  <FriendRequests
-                    friendRequests={receivedRequests}
-                    onAccept={handleAcceptRequest}
-                    onDecline={handleDeclineRequest}
-                    loadingRequestId={loadingRequestId}
-                  />
-                </div>
+                <FriendRequests
+                  friendRequests={receivedRequests}
+                  onAccept={acceptFriendRequest}
+                  onDecline={declineFriendRequest}
+                  loadingRequestId={loadingRespondRequestId}
+                />
               )}
             </div>
           )}
@@ -335,7 +153,7 @@ function ChatSideBar() {
                       {sentRequests.length === 1 ? 'request' : 'requests'} sent
                     </p>
                   </div>
-                  <SendRequestDialog onSendRequest={handleSendRequest} />
+                  <SendRequestDialog onSendRequest={sendFriendRequest} />
                 </div>
               </div>
 

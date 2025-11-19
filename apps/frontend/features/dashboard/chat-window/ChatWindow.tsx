@@ -4,7 +4,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { Send, MoreVertical, Phone, Video } from 'lucide-react';
 import { api } from '@/lib/axio';
-import { useWebSocket } from '@/contexts/WebSocketContext';
+import { websocketService } from '@/services/websocket.service';
 
 interface Message {
     id: string;
@@ -32,7 +32,6 @@ export function ChatWindow({
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { socket } = useWebSocket();
 
     // Fetch messages
     useEffect(() => {
@@ -53,8 +52,6 @@ export function ChatWindow({
 
     // WebSocket listener for new messages
     useEffect(() => {
-        if (!socket) return;
-
         const onReceiveMessage = (msg: any) => {
             if (msg.fromUserId === friendId) {
                 setMessages((prev) => [
@@ -69,16 +66,16 @@ export function ChatWindow({
                 ]);
 
                 // Emit that messages have been read since chat is open
-                socket.emit('messages_read', { friendId });
+                websocketService.emit('messages_read', { friendId });
             }
         };
 
-        socket.on('receive_message', onReceiveMessage);
+        websocketService.on('receive_message', onReceiveMessage);
 
         return () => {
-            socket.off('receive_message', onReceiveMessage);
+            websocketService.off('receive_message', onReceiveMessage);
         };
-    }, [socket, friendId]);
+    }, [friendId]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -110,14 +107,10 @@ export function ChatWindow({
             setMessages((prev) => [...prev, newMsg]);
 
             // Emit WebSocket event for real-time delivery
-            if (socket) {
-                socket.emit('send_message', {
-                    toUserId: friendId,
-                    message: messageContent,
-                    id: newMsg.id,
-                    createdAt: newMsg.createdAt,
-                });
-            }
+            websocketService.emitMessage({
+                recipientId: friendId,
+                message: messageContent,
+            });
         } catch (error) {
             console.error('Error sending message:', error);
             setNewMessage(messageContent);

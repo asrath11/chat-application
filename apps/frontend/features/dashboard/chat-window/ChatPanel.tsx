@@ -1,9 +1,10 @@
 import React from 'react';
-import { useChat } from '@/contexts/ChatContext';
+import { useFriendStore } from '@/stores/friendStore';
 import { ChatWindow } from '../chat-window/ChatWindow';
 
 function ChatPanel() {
-  const { selectedFriend } = useChat();
+  const { selectedFriend } = useFriendStore();
+  console.log(selectedFriend)
   if (!selectedFriend) {
     return (
       <div className='flex items-center justify-center h-full'>

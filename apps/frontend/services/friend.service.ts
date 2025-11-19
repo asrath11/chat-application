@@ -1,12 +1,7 @@
 import { api } from '@/lib/axio';
-import { FriendRequest, Friend, CurrentUser } from '../types/chat.types';
+import { FriendRequest, Friend } from '@/types/friend.types';
 
-export const chatService = {
-  async getCurrentUser(): Promise<CurrentUser | null> {
-    const { data } = await api.get('/auth/me');
-    return data.data?.user || null;
-  },
-
+export const friendService = {
   async getFriends(): Promise<Friend[]> {
     const { data } = await api.get('/friends');
     return data.data || [];
@@ -38,9 +33,5 @@ export const chatService = {
       action,
     });
     return data;
-  },
-
-  async signout() {
-    await api.post('/auth/signout');
   },
 };

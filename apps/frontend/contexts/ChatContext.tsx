@@ -1,39 +1,20 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-interface Friend {
-    id: string;
-    name: string;
-    lastMessage?: string;
-    unread: number;
-    avatar?: string;
-    time: string;
-    username?: string;
-}
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useInitializeChatData } from '@/hooks/useInitializeChatData';
 
 interface ChatContextType {
-    selectedFriend: Friend | null;
-    setSelectedFriend: (friend: Friend | null) => void;
-    selectFriendById: (friendId: string, friends: Friend[]) => void;
+    initialized: boolean;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-    const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
-
-    const selectFriendById = (friendId: string, friends: Friend[]) => {
-        const friend = friends.find((f) => f.id === friendId);
-        if (friend) {
-            setSelectedFriend(friend);
-        }
-    };
+    // Initialize chat data on mount
+    useInitializeChatData();
 
     return (
-        <ChatContext.Provider
-            value={{ selectedFriend, setSelectedFriend, selectFriendById }}
-        >
+        <ChatContext.Provider value={{ initialized: true }}>
             {children}
         </ChatContext.Provider>
     );

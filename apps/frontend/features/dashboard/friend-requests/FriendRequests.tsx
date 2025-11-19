@@ -18,7 +18,7 @@ interface FriendRequestsProps {
   friendRequests: FriendRequest[];
   onAccept: (id: string) => Promise<void>;
   onDecline: (id: string) => Promise<void>;
-  loadingRequestId?: string | null;
+  loadingRequestId: string | null;
 }
 
 export function FriendRequests({
