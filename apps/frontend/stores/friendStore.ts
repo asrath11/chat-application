@@ -6,6 +6,7 @@ interface FriendState {
   // State
   friends: Friend[];
   selectedFriend: Friend | null;
+  typingByFriend: Record<string, boolean>;
 
   // Actions - Friends
   setFriends: (friends: Friend[]) => void;
@@ -16,12 +17,17 @@ interface FriendState {
   // Actions - Selected Friend
   selectFriend: (friend: Friend | null) => void;
   selectFriendById: (friendId: string) => void;
-  
+
   // Actions - Messages & Unread
   updateLastMessage: (friendId: string, message: string, time: string) => void;
   incrementUnread: (friendId: string) => void;
   clearUnread: (friendId: string) => void;
-  
+
+  // Actions - Typing indicators
+  setTypingStatus: (friendId: string, isTyping: boolean) => void;
+  clearTypingStatus: (friendId: string) => void;
+  clearAllTypingStatuses: () => void;
+
   // Actions - Reset
   reset: () => void;
 }
@@ -29,6 +35,7 @@ interface FriendState {
 const initialState = {
   friends: [],
   selectedFriend: null,
+  typingByFriend: {} as Record<string, boolean>,
 };
 
 export const useFriendStore = create<FriendState>()(
@@ -38,7 +45,7 @@ export const useFriendStore = create<FriendState>()(
 
       // Friends
       setFriends: (friends) => set({ friends }),
-      
+
       addFriend: (friend) =>
         set((state) => {
           if (state.friends.some((f) => f.id === friend.id)) return state;
@@ -74,12 +81,14 @@ export const useFriendStore = create<FriendState>()(
           const updatedFriends = state.friends.map((f) =>
             f.id === friendId ? { ...f, lastMessage: message, time } : f
           );
-          
+
           // Also update selectedFriend if it's the same friend
-          const updatedSelectedFriend = state.selectedFriend?.id === friendId
-            ? updatedFriends.find(f => f.id === friendId) || state.selectedFriend
-            : state.selectedFriend;
-          
+          const updatedSelectedFriend =
+            state.selectedFriend?.id === friendId
+              ? updatedFriends.find((f) => f.id === friendId) ||
+                state.selectedFriend
+              : state.selectedFriend;
+
           return {
             friends: updatedFriends,
             selectedFriend: updatedSelectedFriend,
@@ -102,6 +111,27 @@ export const useFriendStore = create<FriendState>()(
             f.id === friendId ? { ...f, unread: 0 } : f
           ),
         })),
+
+      // Typing indicators
+      setTypingStatus: (friendId, isTyping) =>
+        set((state) => {
+          const typingByFriend = { ...state.typingByFriend };
+          if (isTyping) {
+            typingByFriend[friendId] = true;
+          } else {
+            delete typingByFriend[friendId];
+          }
+          return { typingByFriend };
+        }),
+
+      clearTypingStatus: (friendId) =>
+        set((state) => {
+          const typingByFriend = { ...state.typingByFriend };
+          delete typingByFriend[friendId];
+          return { typingByFriend };
+        }),
+
+      clearAllTypingStatuses: () => set({ typingByFriend: {} }),
 
       // Reset
       reset: () => set(initialState),

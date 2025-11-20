@@ -19,7 +19,7 @@ export class WebSocketService {
     }
 
     const socketUrl = process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:8000';
-    
+
     this.socket = io(socketUrl, {
       auth: { token },
       reconnection: true,
@@ -50,11 +50,12 @@ export class WebSocketService {
     this.socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
       this.reconnectAttempts++;
-      
+
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         console.error('Max reconnection attempts reached');
         toast.error('Connection Error', {
-          description: 'Unable to connect to chat server. Please refresh the page.',
+          description:
+            'Unable to connect to chat server. Please refresh the page.',
         });
       }
     });
@@ -73,7 +74,7 @@ export class WebSocketService {
     // Friend Request Received
     this.on('friend_request_received', (data: any) => {
       console.log('🔥 friend_request_received:', data);
-      
+
       useFriendRequestStore.getState().addReceivedRequest({
         id: data.requestId,
         name: data.senderName,
@@ -102,7 +103,7 @@ export class WebSocketService {
         });
       } catch (error) {
         console.error('Error fetching updated friends:', error);
-        
+
         // Fallback: add with partial data
         useFriendStore.getState().addFriend({
           id: data.recipientId,
@@ -121,7 +122,9 @@ export class WebSocketService {
     this.on('friend_request_declined', (data: any) => {
       console.log('❌ friend_request_declined:', data);
 
-      useFriendRequestStore.getState().updateSentRequestStatus(data.requestId, 'declined');
+      useFriendRequestStore
+        .getState()
+        .updateSentRequestStatus(data.requestId, 'declined');
 
       toast.info('Friend Request Declined', {
         description: `${data.recipientName} declined your friend request`,
@@ -133,21 +136,19 @@ export class WebSocketService {
       console.log('💬 receive_message:', msg);
 
       const { selectedFriend, friends } = useFriendStore.getState();
-      
+
       // Check if this friend exists in the store
-      const friendExists = friends.some(f => f.id === msg.fromUserId);
-      
+      const friendExists = friends.some((f) => f.id === msg.fromUserId);
+
       if (!friendExists) {
         console.warn('⚠️ Received message from unknown friend:', msg.fromUserId);
         return;
       }
-      
+
       // Update last message and timestamp
-      useFriendStore.getState().updateLastMessage(
-        msg.fromUserId,
-        msg.message,
-        msg.createdAt
-      );
+      useFriendStore
+        .getState()
+        .updateLastMessage(msg.fromUserId, msg.message, msg.createdAt);
 
       // Only increment unread if not currently viewing this chat
       if (selectedFriend?.id !== msg.fromUserId) {
@@ -164,13 +165,13 @@ export class WebSocketService {
     // Typing Indicator
     this.on('typing', ({ from }: { from: string }) => {
       console.log('✏️ typing from:', from);
-      // You can add typing indicator state to the store if needed
+      useFriendStore.getState().setTypingStatus(from, true);
     });
 
     // Stop Typing
     this.on('stop_typing', ({ from }: { from: string }) => {
       console.log('🛑 stop typing from:', from);
-      // You can remove typing indicator state from the store if needed
+      useFriendStore.getState().setTypingStatus(from, false);
     });
   }
 
@@ -237,17 +238,24 @@ export class WebSocketService {
     this.emit('friend_request_declined', data);
   }
 
-  emitMessage(data: { recipientId: string; message: string; id?: string; createdAt?: string }) {
+  emitMessage(data: {
+    recipientId: string;
+    message: string;
+    id?: string;
+    createdAt?: string;
+  }) {
     console.log('📤 Emitting message:', data);
     this.emit('send_message', data);
   }
 
   emitTyping(recipientId: string) {
-    this.emit('typing', { to: recipientId });
+    console.log('📤 Emitting typing event to:', recipientId);
+    this.emit('typing', { toUserId: recipientId });
   }
 
   emitStopTyping(recipientId: string) {
-    this.emit('stop_typing', { to: recipientId });
+    console.log('📤 Emitting stop_typing event to:', recipientId);
+    this.emit('stop_typing', { toUserId: recipientId });
   }
 }
 

@@ -5,6 +5,7 @@ import {
   AvatarImage,
 } from '@workspace/ui/components/avatar';
 import { NewChatDialog } from '../chat-window/NewChatDialog';
+import { useFriendStore } from '@/stores/friendStore';
 
 interface Chat {
   id: string;
@@ -27,6 +28,7 @@ export function MessageList({
   activeChatId,
 }: MessageListProps) {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+  const typingByFriend = useFriendStore((state) => state.typingByFriend);
 
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -114,11 +116,11 @@ export function MessageList({
                       {formatTime(friend.time)}
                     </span>
                   </div>
-                  {friend.lastMessage && (
-                    <p className='text-sm text-muted-foreground truncate text-left'>
-                      {friend.lastMessage}
-                    </p>
-                  )}
+                  <p className='text-sm text-muted-foreground truncate text-left'>
+                    {typingByFriend[friend.id]
+                      ? 'typing…'
+                      : friend.lastMessage || 'Start the conversation'}
+                  </p>
                 </div>
               </button>
             ))}

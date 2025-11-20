@@ -4,7 +4,6 @@ import { ChatWindow } from '../chat-window/ChatWindow';
 
 function ChatPanel() {
   const { selectedFriend } = useFriendStore();
-  console.log(selectedFriend)
   if (!selectedFriend) {
     return (
       <div className='flex items-center justify-center h-full'>
