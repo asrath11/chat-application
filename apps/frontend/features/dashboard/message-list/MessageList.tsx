@@ -5,7 +5,7 @@ import {
   AvatarImage,
 } from '@workspace/ui/components/avatar';
 import { NewChatDialog } from '../chat-window/NewChatDialog';
-import { useFriendStore } from '@/stores/friendStore';
+import { useMessageStore } from '@/stores/messageStore';
 
 interface Chat {
   id: string;
@@ -28,7 +28,7 @@ export function MessageList({
   activeChatId,
 }: MessageListProps) {
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
-  const typingByFriend = useFriendStore((state) => state.typingByFriend);
+  const typingByFriend = useMessageStore((state) => state.typingByFriend);
 
   const formatTime = (isoString: string) => {
     const date = new Date(isoString);

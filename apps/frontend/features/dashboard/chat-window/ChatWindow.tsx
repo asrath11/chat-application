@@ -193,11 +193,10 @@ export function ChatWindow({
               className={`flex ${msg.isOwn ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[70%] rounded-lg p-3 ${
-                  msg.isOwn
+                className={`max-w-[70%] rounded-lg p-3 ${msg.isOwn
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-accent text-accent-foreground'
-                }`}
+                  }`}
               >
                 <p className='break-words'>{msg.content}</p>
                 <p className='text-xs mt-1 opacity-70'>

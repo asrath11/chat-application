@@ -52,7 +52,7 @@ function ChatSideBar() {
         Component: SentRequestsTab,
       },
     ],
-    []
+    [totalUnreadCount, receivedRequests.length]
   );
 
   const ActiveTab = chatTabs.find((t) => t.id === activeTab)?.Component;

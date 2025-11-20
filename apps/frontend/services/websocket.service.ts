@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useFriendStore } from '@/stores/friendStore';
+import { useMessageStore } from '@/stores/messageStore';
 import { useFriendRequestStore } from '@/stores/friendRequestStore';
 import { friendService } from './friend.service';
 
@@ -146,32 +147,32 @@ export class WebSocketService {
       }
 
       // Update last message and timestamp
-      useFriendStore
+      useMessageStore
         .getState()
         .updateLastMessage(msg.fromUserId, msg.message, msg.createdAt);
 
       // Only increment unread if not currently viewing this chat
       if (selectedFriend?.id !== msg.fromUserId) {
-        useFriendStore.getState().incrementUnread(msg.fromUserId);
+        useMessageStore.getState().incrementUnread(msg.fromUserId);
       }
     });
 
     // Messages Read
     this.on('messages_read', ({ friendId }: { friendId: string }) => {
       console.log('👁️ messages read by friend:', friendId);
-      useFriendStore.getState().clearUnread(friendId);
+      useMessageStore.getState().clearUnread(friendId);
     });
 
     // Typing Indicator
     this.on('typing', ({ from }: { from: string }) => {
       console.log('✏️ typing from:', from);
-      useFriendStore.getState().setTypingStatus(from, true);
+      useMessageStore.getState().setTypingStatus(from, true);
     });
 
     // Stop Typing
     this.on('stop_typing', ({ from }: { from: string }) => {
       console.log('🛑 stop typing from:', from);
-      useFriendStore.getState().setTypingStatus(from, false);
+      useMessageStore.getState().setTypingStatus(from, false);
     });
   }
 
